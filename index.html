@@ -1627,6 +1627,21 @@
     return true;
   }
   function tickOpponent() {}
+  const VAPID_PUB = 'BBpClASbgm8IEbcy5OEskl4st0t89m-5uthOJ-JfPD0PZG78wH1HVzpkCEsMDVfQoEvdQ8srH7TSyoPcVxiyQSc';
+  const b64u = str => { const pad = '='.repeat((4 - str.length % 4) % 4); const raw = atob((str + pad).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...raw].map(c => c.charCodeAt(0))); };
+  async function ensurePush() {
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || Notification.permission !== 'granted' || !me) return false;
+      const reg = swReg || await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID_PUB) });
+      const j = sub.toJSON();
+      await sb.from('push_subscriptions').delete().eq('endpoint', j.endpoint);
+      const { error } = await sb.from('push_subscriptions').insert({ user_id: me.uid, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth });
+      window.__pushOk = !error;
+      return !error;
+    } catch (e) { window.__pushErr = String(e); return false; }
+  }
 
   // ---------- account data ----------
   function freshData(profile) {
@@ -1676,6 +1691,7 @@
     state.activeTab = 'challenges';
     startRealtime();
     renderAll();
+    if (state.meta.settings.device) ensurePush();
   }
   function rollover() {
     const today = isoDay(), m = state.meta;
@@ -1742,7 +1758,7 @@
         <button id="btn-enable-device" type="button" class="bg-emerald-800 text-white font-bold px-3 py-1.5 rounded-lg cursor-pointer ${perm === 'granted' || perm === 'unsupported' ? 'hidden' : ''}">تفعيل</button>
         <button id="btn-test-device" type="button" class="bg-amber-500 text-emerald-950 font-bold px-3 py-1.5 rounded-lg cursor-pointer ${perm === 'granted' ? '' : 'hidden'}">جرّب إشعاراً</button></div>
       <div class="space-y-2 text-xs">${row('morning', 'تذكير أذكار الصباح', 'morningAt')}${row('evening', 'تذكير أذكار المساء', 'eveningAt')}${row('closing', 'تنبيه قبل نهاية اليوم', 'closingAt')}</div>
-      <p class="text-[11px] leading-relaxed text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">التذكيرات تعمل الآن والموقع أو التطبيق مفتوح في الخلفية. الإشعار وأنت مغلق الموقع تماماً يحتاج خدمة Push على سيرفر (مشروحة في ملف التوصية).</p>`;
+      <p class="text-[11px] leading-relaxed text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">فعّل إشعارات الجهاز لتصلك التحديات ونتائج المنافسة والتذكيرات (الصباح ٥:٣٠ والمساء ٤:٣٠ وقبل نهاية اليوم ٩:٣٠ بتوقيت القاهرة) حتى والموقع مغلق. على الآيفون: أضف الموقع للشاشة الرئيسية أولاً.</p>`;
   }
   document.getElementById('notif-settings') || 0;
 
@@ -1904,10 +1920,10 @@
   // notification settings (delegated)
   $('notif-settings').addEventListener('click', async e => {
     if (e.target.id === 'btn-enable-device') {
-      try { const p = await Notification.requestPermission(); state.meta.settings.device = p === 'granted'; } catch (err) {}
+      try { const p = await Notification.requestPermission(); state.meta.settings.device = p === 'granted'; if (p === 'granted') { const ok = await ensurePush(); triggerToast(ok ? 'تم تفعيل الإشعارات ✅' : 'تم السماح لكن تعذّر ربط الجهاز', ok ? 'ستصلك التنبيهات حتى والموقع مغلق.' : 'جرّب إضافة الموقع للشاشة الرئيسية ثم أعد المحاولة.'); } } catch (err) {}
       renderAll();
     }
-    if (e.target.id === 'btn-test-device') deviceNotify('سابقون', 'تمام! الإشعارات شغالة على جهازك ✅');
+    if (e.target.id === 'btn-test-device') { await ensurePush(); const { error } = await sb.rpc('test_push'); if (error) deviceNotify('سابقون', 'تمام! الإشعارات شغالة على جهازك ✅'); }
   });
   $('notif-settings').addEventListener('change', e => {
     const s = state.meta.settings;
@@ -1945,4 +1961,4 @@
 
   </script>
 </body>
-</html>
+ </html>
