@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>سابقون — منصة تحديات الأذكار وحفظ صحيح البخاري</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <link rel="manifest" href="manifest.webmanifest" />
@@ -1202,7 +1203,7 @@
             <span class="font-num text-xs opacity-75">#${u.id}</span>
           </div>
           <div class="mt-2 flex items-center justify-between text-xs font-bold">
-            <span>${u.dailyDone}/5 تحديات</span>
+            <span>${u.dailyDone == null ? '' : u.dailyDone + '/5 تحديات'}</span>
             <span class="font-num text-base font-black">${u.score} نقطة</span>
           </div>
         </div>
@@ -1541,43 +1542,91 @@
   const daysBetween = (a, b) => Math.round((Date.parse(b + 'T00:00:00') - Date.parse(a + 'T00:00:00')) / 86400000);
   const weekStart = () => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 1) % 7)); return isoDay(d); }; // weeks start Saturday
 
-  // ---------- Store (swap this object for a backend later) ----------
+  // ---------- Supabase backend ----------
+  const SB_URL = 'https://lsvawhwdxldopdnszhsy.supabase.co';
+  const SB_KEY = 'sb_publishable_qyxRT9Gdl3WL5KM8mkmJ_g_Th3QMkpB';
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
   const Store = {
     read() { try { return JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch (e) { return null; } },
     write(db) { try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) {} }
   };
-  let db = Store.read() || { accounts: {}, session: null, nextId: 1011 };
-  let swReg = null;
-  let lbPeriod = 'day';
+  let db = Store.read() || { accounts: {} };
+  if (!db.accounts) db.accounts = {};
+  let swReg = null, lbPeriod = 'day', lbData = { day: [], week: [], all: [] }, oppSrv = null, me = null, rtChan = null, pushTimer = null, pushBusy = false;
+  const PW = pin => 'sbq_' + pin + '_sbq';
 
-  async function hashPin(pin, salt) {
-    try {
-      if (window.crypto && crypto.subtle) {
-        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin));
-        return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-      }
-    } catch (e) {}
-    let h = 2166136261; const s = salt + ':' + pin;
-    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
-    return 'f' + (h >>> 0).toString(16);
+  function mapProfile(p) { return { id: p.public_id, name: p.nick, gender: p.gender, score: p.score, dailyDone: 0, streak: p.streak, hadiths: 0, uid: p.user_id }; }
+  async function refreshMe() {
+    const { data } = await sb.from('profiles').select('*').maybeSingle();
+    if (data && state.currentUser) { state.currentUser.score = data.score; state.currentUser.streak = data.streak; }
   }
-
-  // ---------- opponent model ----------
-  const paceOf = u => 0.55 + ((u.id * 37) % 40) / 100;      // final % an opponent reaches by day end
-  function tickOpponent() {
-    const opp = getCurrentOpponent(); if (!opp) return;
-    const { elapsedHours, elapsedMins } = getDayTimeMetrics();
-    const frac = Math.min(1, (elapsedHours * 60 + elapsedMins) / 1440);
-    const before = state.opponentPct;
-    state.opponentPct = Math.min(100, Math.round(paceOf(opp) * 100 * Math.pow(frac, 0.8)));
+  async function refreshLb() {
+    for (const p of ['day', 'week', 'all']) { const { data } = await sb.rpc('leaderboard', { p_period: p }); if (data) lbData[p] = data; }
+    syncUsers();
+  }
+  async function refreshOpp() {
+    const { data } = await sb.rpc('opponent_status');
+    const o = data && data[0];
+    const prev = state.opponentPct;
+    if (o) { oppSrv = { id: o.public_id, name: o.nick, gender: state.currentUser.gender }; state.opponentId = o.public_id; state.opponentPct = o.pct; }
+    else { oppSrv = null; state.opponentPct = 0; }
     const mine = calculateUserProgressPct();
-    state.meta.lastOppAhead = state.meta.lastOppAhead || false;
-    const ahead = state.opponentPct > mine && state.opponentPct > 0;
-    if (state._ready && ahead && !state.meta.lastOppAhead && before !== undefined && mine > 0) {
-      addNotification('منافسك تخطّاك! 🏃', `${opp.name} وصل ${state.opponentPct}% وأنت ${mine}%. كمّل وردك!`);
-    }
-    state.meta.lastOppAhead = ahead;
+    const ahead = oppSrv && state.opponentPct > mine && state.opponentPct > 0;
+    if (oppSrv && ahead && !state.meta.lastOppAhead && state.opponentPct > (prev || 0) && mine > 0)
+      addNotification('منافسك تخطّاك! 🏃', `${oppSrv.name} وصل ${state.opponentPct}% وأنت ${mine}%. كمّل وردك!`);
+    state.meta.lastOppAhead = !!ahead;
   }
+  async function refreshHistory() {
+    const { data } = await sb.from('duel_results').select('*').order('day', { ascending: false }).limit(30);
+    if (!data) return;
+    const uid = me.uid;
+    state.meta.history = data.map(r => {
+      const a = r.user_a === uid, my = a ? r.pct_a : r.pct_b, op = a ? r.pct_b : r.pct_a;
+      return { day: r.day, opp: '', my, oppPct: op, res: !r.winner ? 'draw' : r.winner === uid ? 'win' : 'loss' };
+    });
+  }
+  async function pullNotifs(silent) {
+    const { data } = await sb.from('notifications').select('*').order('id', { ascending: false }).limit(20);
+    if (!data) return;
+    state.meta.seen = state.meta.seen || [];
+    data.slice().reverse().forEach(n => {
+      if (state.meta.seen.includes(n.id)) return;
+      state.meta.seen.push(n.id);
+      addNotification(n.title, n.body, !silent);
+    });
+    state.meta.seen = state.meta.seen.slice(-100);
+  }
+  function startRealtime() {
+    if (rtChan) sb.removeChannel(rtChan);
+    rtChan = sb.channel('n-' + me.uid).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_id=eq.' + me.uid }, async () => { await pullNotifs(false); await refreshOpp(); renderAll(); }).subscribe();
+  }
+  function schedulePush(ms) { clearTimeout(pushTimer); pushTimer = setTimeout(pushProgress, ms || 1200); }
+  async function pushProgress() {
+    if (!state._ready || pushBusy) return;
+    pushBusy = true;
+    try {
+      const t = state.tasks;
+      const { error } = await sb.rpc('submit_progress', { p_subhan: t.subhan, p_salawat: t.salawat, p_istighfar: t.istighfar, p_morning: t.morning, p_evening: t.evening });
+      if (error) { if (/too fast/.test(error.message)) schedulePush(4000); }
+      else { await refreshMe(); refreshLb().then(() => { if (state.activeTab === 'leaderboard') renderLeaderboard(); }); }
+    } catch (e) {}
+    pushBusy = false;
+  }
+  async function loadToday() {
+    const cairo = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+    const { data, error } = await sb.from('daily_progress').select('*').eq('day', cairo);
+    const r = data && data[0];
+    if (r) {
+      state.tasks = { subhan: r.subhan, salawat: r.salawat, istighfar: r.istighfar, morning: r.morning, evening: r.evening };
+      state.awarded = { subhan: r.subhan >= 100, salawat: r.salawat >= 100, istighfar: r.istighfar >= 70, morning: r.morning.every(Boolean), evening: r.evening.every(Boolean), combinedBonus: false };
+      state.awarded.combinedBonus = ['subhan', 'salawat', 'istighfar', 'morning', 'evening'].every(k => state.awarded[k]);
+      return true;
+    }
+    state.tasks = { subhan: 0, salawat: 0, istighfar: 0, morning: [false, false, false, false], evening: [false, false, false, false] };
+    state.awarded = { subhan: false, salawat: false, istighfar: false, morning: false, evening: false, combinedBonus: false };
+    return true;
+  }
+  function tickOpponent() {}
 
   // ---------- account data ----------
   function freshData(profile) {
@@ -1592,64 +1641,49 @@
     };
   }
   function syncUsers() {
-    const others = Object.values(db.accounts).filter(a => a.profile.id !== state.currentUser.id).map(a => ({ ...a.profile, local: true }));
-    state.users = [...INITIAL_USERS, ...others];
+    const g = state.currentUser ? state.currentUser.gender : 'male';
+    state.users = (lbData.all || []).filter(r => !r.is_me).map(r => ({ id: r.public_id, name: r.nick, gender: g, score: r.points, dailyDone: 0, streak: r.streak, hadiths: 0, local: true }));
+    if (oppSrv && !state.users.find(u => u.id === oppSrv.id)) state.users.push({ ...oppSrv, score: 0, dailyDone: 0, streak: 0, hadiths: 0 });
   }
+  window.getCurrentOpponent = function () { return oppSrv || { id: '—', name: 'اختر منافساً', gender: state.currentUser.gender }; };
   function save() {
     if (!state._ready) return;
-    const acc = db.accounts[state.currentUser.id]; if (!acc) return;
-    acc.profile = state.currentUser;
-    acc.data = {
-      tasks: state.tasks, awarded: state.awarded,
+    const id = state.currentUser.id;
+    db.accounts[id] = { data: {
       hadith: { unlockedIndex: state.hadith.unlockedIndex, selectedIndex: state.hadith.selectedIndex, mastered: state.hadith.mastered },
-      notifications: state.notifications.slice(0, 40), challengeMode: state.challengeMode, singleTaskKey: state.singleTaskKey,
-      opponentId: state.opponentId, meta: state.meta
-    };
+      notifications: state.notifications.slice(0, 40), challengeMode: state.challengeMode, singleTaskKey: state.singleTaskKey, meta: state.meta } };
     Store.write(db);
+    schedulePush(1500);
   }
-  function enter(id) {
-    const acc = db.accounts[id];
-    state.currentUser = acc.profile;
-    const d = acc.data || freshData(acc.profile);
-    state.tasks = d.tasks; state.awarded = d.awarded;
+  async function enter(profile) {
+    me = mapProfile(profile);
+    const acc = db.accounts[me.id];
+    const d = (acc && acc.data) || freshData(me);
+    state.currentUser = me;
     state.hadith = { ...d.hadith, blurMode: false, quizActive: false, quizAnswers: {} };
+    state.currentUser.hadiths = state.hadith.mastered.length;
     state.notifications = d.notifications; state.challengeMode = d.challengeMode; state.singleTaskKey = d.singleTaskKey;
-    state.opponentId = d.opponentId; state.meta = d.meta;
+    state.meta = d.meta;
     state.meta.settings = Object.assign({ device: false, morning: true, morningAt: '05:30', evening: true, eveningAt: '16:30', closing: true, closingAt: '21:30' }, state.meta.settings);
-    state.nextSequentialId = db.nextId;
-    db.session = id;
-    syncUsers();
+    state.nextSequentialId = me.id + 1;
+    await loadToday();
+    state.currentUser.dailyDone = Object.values(state.awarded).slice(0, 5).filter(Boolean).length;
+    state.meta.lastDay = isoDay(); state.meta.dayStartScore = me.score;
+    await Promise.all([refreshLb(), refreshOpp(), refreshHistory()]);
+    await pullNotifs(true);
     state._ready = true;
-    rollover();
-    const peers = getSameGenderPeers();
-    if (!peers.find(p => p.id === state.opponentId) && peers.length) state.opponentId = peers[0].id;
     document.getElementById('gate').classList.add('hidden');
     state.activeTab = 'challenges';
+    startRealtime();
     renderAll();
   }
-
-  // ---------- daily rollover: settle duel, reset day ----------
   function rollover() {
-    const m = state.meta, today = isoDay();
-    if (m.streakDay && daysBetween(m.streakDay, today) > 1 && state.currentUser.streak) state.currentUser.streak = 0;
+    const today = isoDay(), m = state.meta;
     if (m.lastDay === today) return;
-    const opp = getCurrentOpponent();
-    const myPct = calculateUserProgressPct();
-    if (opp && (myPct > 0 || state.tasks.subhan + state.tasks.salawat + state.tasks.istighfar > 0)) {
-      const oppFinal = Math.round(paceOf(opp) * 100);
-      const res = myPct > oppFinal ? 'win' : myPct < oppFinal ? 'loss' : 'draw';
-      m.history.unshift({ day: m.lastDay, opp: opp.name, my: myPct, oppPct: oppFinal, res });
-      m.history = m.history.slice(0, 30);
-      if (res === 'win') state.currentUser.score += 30;
-      const t = { win: 'فزت في تحدي أمس! 🏆', loss: 'خسرت تحدي أمس، والليلة فرصة جديدة', draw: 'تعادلت في تحدي أمس' }[res];
-      addNotification(t, `أنت ${myPct}% مقابل ${opp.name} ${oppFinal}%.${res === 'win' ? ' +30 نقطة مكافأة.' : ''}`, false);
-    }
     state.tasks = { subhan: 0, salawat: 0, istighfar: 0, morning: [false, false, false, false], evening: [false, false, false, false] };
     state.awarded = { subhan: false, salawat: false, istighfar: false, morning: false, evening: false, combinedBonus: false };
-    state.currentUser.dailyDone = 0;
-    m.lastDay = today; m.fired = {}; m.lastOppAhead = false;
-    m.dayStartScore = state.currentUser.score;
-    if (m.weekKey !== weekStart()) { m.weekKey = weekStart(); m.weekStartScore = state.currentUser.score; }
+    state.currentUser.dailyDone = 0; m.lastDay = today; m.fired = {}; m.lastOppAhead = false;
+    refreshMe(); refreshLb(); refreshOpp(); refreshHistory(); pullNotifs(false);
   }
 
   // streak: first completed task of the day counts
@@ -1731,10 +1765,9 @@
     const w = m.history.filter(h => h.res === 'win').length, l = m.history.filter(h => h.res === 'loss').length;
     document.getElementById('sum-record').textContent = `${w} فوز · ${l} خسارة`;
     let duel = 'اختر منافساً لتبدأ التحدي.';
-    if (opp) {
-      const diff = pct - state.opponentPct, proj = Math.round(paceOf(opp) * 100);
+    if (oppSrv) {
+      const diff = pct - state.opponentPct;
       duel = diff > 0 ? `متقدّم بـ ${diff}% على ${opp.name}` : diff < 0 ? `متأخر بـ ${-diff}% عن ${opp.name}` : `تعادل مع ${opp.name} حالياً`;
-      duel += ` · المتوقع أن ينهي اليوم عند ~${proj}% (تُحسم النتيجة منتصف الليل)`;
     }
     document.getElementById('sum-duel').textContent = duel;
     const next = ['subhan', 'salawat', 'istighfar', 'morning', 'evening'].find(k => getTaskProgress(k) < 1);
@@ -1753,28 +1786,23 @@
       const on = b.dataset.period === lbPeriod;
       b.className = 'lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer ' + (on ? 'bg-emerald-800 text-white' : 'text-stone-600');
     });
-    const metric = u => {
-      if (u.id === u0.id) return lbPeriod === 'day' ? u.score - m.dayStartScore : lbPeriod === 'week' ? u.score - m.weekStartScore : u.score;
-      if (u.local) return lbPeriod === 'all' ? u.score : Math.round(u.score * 0.3);
-      return lbPeriod === 'day' ? u.dailyDone * 40 + (u.id % 5) * 3 : lbPeriod === 'week' ? Math.round(u.score * 0.4 + (u.id % 7) * 5) : u.score;
-    };
-    const rows = state.users.filter(u => u.gender === u0.gender && u.id !== u0.id).concat([u0]).map(u => ({ u, v: metric(u) })).sort((a, b) => b.v - a.v);
+    const rows = (lbData[lbPeriod] || []).map(r => ({ u: { id: r.public_id, name: r.nick, dailyDone: r.is_me ? u0.dailyDone : null, hadiths: r.is_me ? u0.hadiths : null, streak: r.streak, me: r.is_me }, v: r.points }));
     const medals = ['bg-amber-100 border-amber-300 text-amber-900', 'bg-stone-100 border-stone-300 text-stone-800', 'bg-orange-50 border-orange-200 text-orange-900'];
     const names = ['المركز الأول 🥇', 'المركز الثاني 🥈', 'المركز الثالث 🥉'];
     const unit = lbPeriod === 'day' ? 'نقطة اليوم' : lbPeriod === 'week' ? 'نقطة الأسبوع' : 'نقطة';
     document.getElementById('leaderboard-podium').innerHTML = rows.slice(0, 3).map(({ u, v }, i) => `
-      <div class="rounded-2xl border p-4 ${medals[i]} ${u.id === u0.id ? 'ring-2 ring-emerald-700' : ''}">
+      <div class="rounded-2xl border p-4 ${medals[i]} ${u.me ? 'ring-2 ring-emerald-700' : ''}">
         <div class="text-xs font-extrabold mb-1">${names[i]}</div>
-        <div class="font-extrabold text-base flex items-center justify-between"><span>${u.name} ${u.id === u0.id ? '(أنت)' : ''}</span><span class="font-num text-xs opacity-75">#${u.id}</span></div>
-        <div class="mt-2 flex items-center justify-between text-xs font-bold"><span>${u.dailyDone}/5 تحديات</span><span class="font-num text-base font-black">${v} ${unit}</span></div>
+        <div class="font-extrabold text-base flex items-center justify-between"><span>${u.name} ${u.me ? '(أنت)' : ''}</span><span class="font-num text-xs opacity-75">#${u.id}</span></div>
+        <div class="mt-2 flex items-center justify-between text-xs font-bold"><span>${u.dailyDone == null ? '' : u.dailyDone + '/5 تحديات'}</span><span class="font-num text-base font-black">${v} ${unit}</span></div>
       </div>`).join('');
     document.getElementById('leaderboard-tbody').innerHTML = rows.map(({ u, v }, i) => {
-      const me = u.id === u0.id;
+      const me = !!u.me;
       return `<tr class="${me ? 'bg-emerald-50/90 font-bold' : 'hover:bg-stone-50'}">
         <td class="py-3 px-3 font-num font-bold text-stone-700">${i + 1}</td>
         <td class="py-3 px-3 font-num text-emerald-800 font-semibold">#${u.id}</td>
         <td class="py-3 px-3 text-stone-900">${u.name} ${me ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md mr-1">أنت</span>' : ''}</td>
-        <td class="py-3 px-3 font-num">${u.dailyDone} / 5</td><td class="py-3 px-3 font-num">${u.hadiths} / 5</td>
+        <td class="py-3 px-3 font-num">${u.dailyDone == null ? "—" : u.dailyDone + " / 5"}</td><td class="py-3 px-3 font-num">${u.hadiths == null ? "—" : u.hadiths + " / 5"}</td>
         <td class="py-3 px-3 font-num">${u.streak} يوم</td><td class="py-3 px-3 font-num font-extrabold text-emerald-800">${v}</td></tr>`;
     }).join('');
   };
@@ -1802,10 +1830,10 @@
     $('acct-menu').classList.remove('hidden'); if (window.lucide) lucide.createIcons();
   });
   $('acct-close').addEventListener('click', () => $('acct-menu').classList.add('hidden'));
-  $('acct-logout').addEventListener('click', () => { save(); state._ready = false; db.session = null; Store.write(db); location.reload(); });
-  $('acct-delete').addEventListener('click', () => {
-    if (!confirm('حذف الحساب وكل بياناته من هذا الجهاز؟')) return;
-    delete db.accounts[state.currentUser.id]; db.session = null; state._ready = false; Store.write(db); location.reload();
+  $('acct-logout').addEventListener('click', async () => { save(); state._ready = false; await sb.auth.signOut(); location.reload(); });
+  $('acct-delete').addEventListener('click', async () => {
+    if (!confirm('حذف الحساب وكل بياناته نهائياً؟')) return;
+    state._ready = false; await sb.rpc('delete_me'); await sb.auth.signOut(); delete db.accounts[me.id]; Store.write(db); location.reload();
   });
   $('btn-sim-opponent').classList.add('hidden');
   $('btn-sim-notif').textContent = 'جرّب تقدّم الوقت (تجربة)';
@@ -1815,38 +1843,60 @@
     $('gate-login').classList.toggle('hidden', t !== 'login'); $('gate-reg').classList.toggle('hidden', t !== 'reg');
     $('gate-tab-login').className = 'py-2 rounded-lg text-sm font-bold cursor-pointer ' + (t === 'login' ? 'bg-emerald-800 text-white' : 'text-stone-600');
     $('gate-tab-reg').className = 'py-2 rounded-lg text-sm font-bold cursor-pointer ' + (t === 'reg' ? 'bg-emerald-800 text-white' : 'text-stone-600');
-    $('reg-next-id').textContent = '#' + db.nextId;
+    $('reg-next-id').textContent = 'بعد التسجيل';
   }
   $('gate-tab-login').addEventListener('click', () => gateTab('login'));
   $('gate-tab-reg').addEventListener('click', () => gateTab('reg'));
   const showErr = (id, msg) => { const e = $(id); e.textContent = msg; e.classList.remove('hidden'); };
+  async function afterAuth() {
+    const { data } = await sb.from('profiles').select('*').maybeSingle();
+    if (!data) throw new Error('no profile');
+    await enter(data);
+  }
   $('gate-login').addEventListener('submit', async e => {
     e.preventDefault();
-    const acc = db.accounts[Number($('login-id').value.trim())];
-    if (!acc || acc.pinHash !== await hashPin($('login-pin').value, acc.salt)) return showErr('login-err', 'الرقم التعريفي أو الرمز السري غير صحيح.');
-    enter(acc.profile.id);
+    const btn = e.submitter; if (btn) btn.disabled = true;
+    try {
+      const id = parseInt($('login-id').value.trim(), 10);
+      const { data: email } = await sb.rpc('email_for_id', { p_id: id });
+      if (!email) throw new Error('bad');
+      const { error } = await sb.auth.signInWithPassword({ email, password: PW($('login-pin').value.trim()) });
+      if (error) throw error;
+      await afterAuth();
+    } catch (err) { showErr('login-err', 'الرقم التعريفي أو الرمز السري غير صحيح.'); }
+    if (btn) btn.disabled = false;
   });
   $('gate-reg').addEventListener('submit', async e => {
     e.preventDefault();
+    const btn = e.submitter; if (btn) btn.disabled = true;
     const name = $('reg-name').value.trim(), pin = $('reg-pin').value.trim();
-    if (!/^[0-9]{4,12}$/.test(pin)) return showErr('reg-err', 'الرمز السري يجب أن يكون أرقاماً فقط (٤ إلى ١٢).');
+    if (!/^[0-9]{4,12}$/.test(pin)) { if (btn) btn.disabled = false; return showErr('reg-err', 'الرمز السري يجب أن يكون أرقاماً فقط (٤ إلى ١٢).'); }
     const gender = document.querySelector('input[name="reg-gender"]:checked').value;
-    const id = db.nextId++, salt = Math.random().toString(36).slice(2);
-    const profile = { id, name, gender, score: 0, dailyDone: 0, streak: 0, hadiths: 0 };
-    db.accounts[id] = { profile, salt, pinHash: await hashPin(pin, salt), data: freshData(profile) };
-    Store.write(db); enter(id);
+    try {
+      const rnd = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2, '0')).join('');
+      const { data, error } = await sb.auth.signUp({ email: 'u' + rnd + '@sabiqoon.app', password: PW(pin), options: { data: { nick: name, gender } } });
+      if (error) throw error;
+      if (!data.session) throw new Error('no session');
+      await afterAuth();
+    } catch (err) { showErr('reg-err', 'تعذّر إنشاء الحساب الآن، حاول بعد قليل. (' + (err.message || '') + ')'); }
+    if (btn) btn.disabled = false;
   });
 
   // friend challenge
-  $('friend-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const id = Number($('friend-id').value.trim()), f = state.users.find(u => u.id === id);
-    if (!f) return triggerToast('لم نجد هذا الرقم', 'تأكد من الرقم التعريفي لصديقك.');
-    if (f.gender !== state.currentUser.gender) return triggerToast('المنافسة داخل نفس القسم فقط', 'أولاد مع أولاد وبنات مع بنات.');
-    state.opponentId = f.id; state.meta.lastOppAhead = false; $('friend-id').value = '';
-    addNotification('بدأ التحدي! ⚔️', `أنت الآن في تحدٍّ مع ${f.name} (#${f.id}). النتيجة تُحسم منتصف الليل.`);
+  async function challenge(id) {
+    const { error } = await sb.rpc('start_challenge', { p_public_id: id });
+    if (error) {
+      const m = error.message || '';
+      return triggerToast(/same division/.test(m) ? 'المنافسة داخل نفس القسم فقط' : /not found/.test(m) ? 'لم نجد هذا الرقم' : 'تعذّر بدء التحدي', /same division/.test(m) ? 'أولاد مع أولاد وبنات مع بنات.' : /yourself/.test(m) ? 'لا يمكنك تحدي نفسك.' : 'تأكد من الرقم التعريفي لصديقك.');
+    }
+    await refreshOpp();
+    addNotification('بدأ التحدي! ⚔️', `أنت الآن في تحدٍّ مع ${oppSrv ? oppSrv.name : ''} (#${id}). النتيجة تُحسم منتصف الليل.`);
     renderAll();
-  });
+  }
+  $('friend-form').addEventListener('submit', e => { e.preventDefault(); const v = parseInt($('friend-id').value.trim(), 10); $('friend-id').value = ''; if (v) challenge(v); });
+  { const o = $('opponent-select'), n = o.cloneNode(true); o.replaceWith(n); n.addEventListener('change', e => challenge(Number(e.target.value)));
+    const r = $('btn-random-opponent'), rn = r.cloneNode(true); r.replaceWith(rn);
+    rn.addEventListener('click', () => { const p = getSameGenderPeers(); if (p.length) challenge(p[Math.floor(Math.random() * p.length)].id); else triggerToast('لا يوجد منافسون بعد', 'ادعُ أصدقاءك للتسجيل وتحدَّهم برقمهم.'); }); }
 
   // leaderboard periods
   document.querySelectorAll('.lb-period').forEach(b => b.addEventListener('click', () => { lbPeriod = b.dataset.period; renderLeaderboard(); }));
@@ -1882,14 +1932,17 @@
   // boot
   gateTab('login');
   state._ready = false;
-  if (db.session && db.accounts[db.session]) enter(db.session); else $('gate').classList.remove('hidden');
+  sb.auth.getSession().then(async ({ data }) => {
+    if (data && data.session) { try { await afterAuth(); return; } catch (e) {} }
+    $('gate').classList.remove('hidden');
+  });
   setInterval(runReminders, 30000);
   setTimeout(runReminders, 1500);
-  setInterval(() => { if (state._ready) { updateCountdownBar(); tickOpponent(); renderSummary(); } }, 60000);
+  setInterval(() => { if (state._ready) { updateCountdownBar(); refreshOpp().then(renderAll); } }, 30000);
   window.addEventListener('beforeunload', save);
-  window.__sabiqoon = { db: () => db, state };
+  window.__sabiqoon = { state, sb };
 })();
 
   </script>
 </body>
-  </html>
+</html>
