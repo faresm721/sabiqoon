@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>سابقون — منصة تحديات الأذكار وحفظ صحيح البخاري</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#064e3b" />
+  <link rel="icon" href="icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700;800&family=Inter:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --emerald-deep: #064e3b;
+      --emerald-mid: #047857;
+      --gold-accent: #d97706;
+      --cream-bg: #faf8f4;
+    }
+    body {
+      font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--cream-bg);
+      color: #1f2937;
+      overflow-x: hidden;
+    }
+    .font-hadith {
+      font-family: 'Amiri', serif;
+      line-height: 2;
+    }
+    .font-num {
+      font-family: 'Inter', 'Cairo', sans-serif;
+    }
+    .islamic-pattern {
+      background-color: #064e3b;
+      background-image: radial-gradient(rgba(245, 158, 11, 0.14) 1px, transparent 1px),
+        radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+      background-position: 0 0, 12px 12px;
+    }
+    .tap-btn:active {
+      transform: scale(0.95);
+    }
+    .toast-enter {
+      animation: slideIn 0.28s ease-out forwards;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .blur-word {
+      filter: blur(6px);
+      background: #fef3c7;
+      border-radius: 6px;
+      padding: 0 6px;
+      cursor: pointer;
+      transition: filter 0.2s ease;
+      display: inline-block;
+    }
+    .blur-word.revealed {
+      filter: blur(0);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-4 left-4 right-4 sm:left-4 sm:right-auto sm:w-96 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Top Navigation & Status Bar -->
+  <header class="islamic-pattern text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 py-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <!-- Brand -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
+            <i data-lucide="sparkles" class="w-5 h-5 text-amber-300"></i>
+          </div>
+          <div>
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight leading-tight flex items-center gap-2">
+              سابقون
+              <span class="text-xs font-semibold bg-amber-500/25 text-amber-200 border border-amber-400/30 px-2 py-0.5 rounded-full">تحدي الذكر والحديث</span>
+            </h1>
+            <p class="text-xs text-emerald-100/80 hidden sm:block">تحديات يومية ١ ضد ١ • أولاد مع أولاد وبنات مع بنات • حفظ صحيح البخاري</p>
+          </div>
+        </div>
+
+        <!-- User Badge & Controls -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button id="btn-open-notifications" type="button" class="relative p-2 rounded-xl bg-white/10 hover:bg-white/20 transition cursor-pointer" title="التنبيهات">
+            <i data-lucide="bell" class="w-5 h-5 text-amber-200"></i>
+            <span id="notif-badge" class="font-num absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-amber-500 text-emerald-950 text-[11px] font-bold flex items-center justify-center">0</span>
+          </button>
+
+          <button id="btn-open-auth" type="button" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/15 px-3 py-1.5 rounded-xl transition cursor-pointer">
+            <div id="header-avatar" class="w-7 h-7 rounded-full bg-amber-400 text-emerald-950 font-bold text-xs flex items-center justify-center shrink-0">أ</div>
+            <div class="text-right leading-tight">
+              <div class="text-xs sm:text-sm font-bold flex items-center gap-1.5">
+                <span id="header-user-name">أحمد</span>
+                <span id="header-user-id" class="font-num text-[11px] bg-emerald-950/60 text-amber-300 px-1.5 py-0.5 rounded-md">#1011</span>
+              </div>
+              <div class="text-[11px] text-emerald-100/80 flex items-center gap-1">
+                <span id="header-user-gender">قسم الأولاد</span>
+                <span>•</span>
+                <span id="header-user-score" class="font-num text-amber-300 font-bold">0 نقطة</span>
+              </div>
+            </div>
+            <i data-lucide="user-plus" class="w-4 h-4 text-emerald-200 hidden sm:block"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Daily 24h Countdown Strip -->
+      <div class="mt-3 bg-emerald-950/45 border border-white/10 rounded-xl px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5">
+          <i data-lucide="clock" class="w-4 h-4 text-amber-300 shrink-0"></i>
+          <div class="text-xs sm:text-sm">
+            <span id="countdown-text" class="font-semibold text-white">عدّى 0 ساعة من اليوم — فاضل لك 24 ساعة على انتهاء التحدي</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-28 sm:w-36 h-2 bg-white/15 rounded-full overflow-hidden">
+            <div id="day-progress-bar" class="h-full bg-gradient-to-l from-amber-400 to-amber-300 rounded-full transition-all duration-500" style="width: 17%"></div>
+          </div>
+          <button id="btn-sim-notif" type="button" class="text-xs bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold px-2.5 py-1 rounded-lg transition shrink-0 cursor-pointer">
+            جرّب تنبيه الوقت
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Navigation Tabs -->
+  <nav class="bg-white border-b border-stone-200 sticky top-[124px] sm:top-[116px] z-20">
+    <div class="max-w-6xl mx-auto px-4 flex items-center justify-between gap-2 overflow-x-auto">
+      <div class="flex items-center gap-1 py-2">
+        <button data-tab="challenges" type="button" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap cursor-pointer">
+          <i data-lucide="swords" class="w-4 h-4"></i>
+          تحديات الأذكار ١ ضد ١
+        </button>
+        <button data-tab="hadith" type="button" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap cursor-pointer">
+          <i data-lucide="book-open-check" class="w-4 h-4"></i>
+          حفظ صحيح البخاري
+        </button>
+        <button data-tab="leaderboard" type="button" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap cursor-pointer">
+          <i data-lucide="trophy" class="w-4 h-4"></i>
+          لوحة المتصدرين
+        </button>
+      </div>
+      <div class="hidden md:flex items-center gap-2 text-xs text-stone-500 shrink-0">
+        <i data-lucide="users" class="w-4 h-4 text-emerald-700"></i>
+        <span>إجمالي المسجلين بالتسلسل:</span>
+        <span id="total-visitors-count" class="font-num font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">#1011</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="max-w-6xl w-full mx-auto px-4 py-6 flex-1 space-y-6">
+
+    <!-- TAB 1: DAILY ADHKAR CHALLENGES -->
+    <section id="view-challenges" class="space-y-6">
+      <!-- v2: today summary -->
+      <div id="summary-card" class="bg-white rounded-2xl border border-stone-200 shadow-sm p-4 sm:p-5">
+        <div class="flex flex-col md:flex-row gap-5 md:items-center">
+          <div class="flex items-center gap-4">
+            <div class="relative w-28 h-28 shrink-0">
+              <svg viewBox="0 0 100 100" class="w-28 h-28 -rotate-90">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#e7e5e4" stroke-width="10"></circle>
+                <circle id="sum-ring" cx="50" cy="50" r="42" fill="none" stroke="#047857" stroke-width="10" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="263.9" style="transition: stroke-dashoffset .5s ease"></circle>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span id="sum-pct" class="font-num text-2xl font-black text-emerald-900">0%</span>
+                <span class="text-[10px] font-bold text-stone-500">إنجاز اليوم</span>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2 text-sm font-extrabold text-orange-700 bg-orange-50 border border-orange-200 rounded-xl px-3 py-1.5"><span>🔥</span><span id="sum-streak">0 يوم متتالي</span></div>
+              <div class="text-xs font-bold text-stone-600">سجل المنافسات: <span id="sum-record" class="font-num text-emerald-800">0 فوز · 0 خسارة</span></div>
+            </div>
+          </div>
+          <div class="flex-1 space-y-3">
+            <div id="sum-duel" class="text-sm font-bold text-emerald-950 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5"></div>
+            <div id="sum-next" class="text-xs font-semibold text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2"></div>
+            <div id="sum-badges" class="flex flex-wrap gap-1.5"></div>
+            <form id="friend-form" class="flex gap-2">
+              <input id="friend-id" inputmode="numeric" placeholder="تحدَّ صديقك برقمه التعريفي" class="font-num flex-1 text-sm bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+              <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-emerald-950 font-extrabold text-sm px-4 rounded-xl cursor-pointer">تحدّي</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Setup & Matchmaking Card -->
+      <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-4 sm:p-5">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <!-- Challenge Type Switch -->
+          <div class="space-y-2">
+            <div class="text-xs font-bold text-stone-500 uppercase tracking-wide">١. اختر نظام التحدي</div>
+            <div class="inline-flex bg-stone-100 p-1 rounded-xl gap-1">
+              <button id="mode-combined-btn" type="button" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer">
+                تحدي مُجمّع (اليوم كامل)
+              </button>
+              <button id="mode-single-btn" type="button" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer">
+                تحدي منفصل (ذكر محدد)
+              </button>
+            </div>
+            <div id="single-task-selector-wrap" class="hidden pt-1">
+              <label for="single-task-select" class="sr-only">اختر الذكر</label>
+              <select id="single-task-select" class="w-full sm:w-64 text-sm font-semibold bg-amber-50 border border-amber-300 text-amber-950 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600">
+                <option value="subhan">سبحان الله (١٠٠ مرة)</option>
+                <option value="salawat">الصلاة على النبي ﷺ (١٠٠ مرة)</option>
+                <option value="istighfar">الاستغفار (٧٠ مرة)</option>
+                <option value="morning">أذكار الصباح</option>
+                <option value="evening">أذكار المساء</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Opponent Selection (Same Gender Only) -->
+          <div class="space-y-2 flex-1 lg:max-w-xl">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-stone-500">٢. اختر منافسك (<span id="gender-lock-label" class="text-emerald-700">أولاد مع أولاد فقط</span>)</span>
+              <span class="text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                <i data-lucide="shield-check" class="w-3 h-3"></i>
+                خصوصية تامة
+              </span>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <div class="flex-1 flex gap-2">
+                <select id="opponent-select" class="flex-1 text-sm font-semibold bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600"></select>
+              </div>
+              <button id="btn-random-opponent" type="button" class="flex items-center justify-center gap-2 bg-emerald-800 hover:bg-emerald-900 text-white text-sm font-bold px-4 py-2 rounded-xl transition shrink-0 cursor-pointer">
+                <i data-lucide="shuffle" class="w-4 h-4 text-amber-300"></i>
+                منافس عشوائي
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Head-to-Head Live Arena -->
+      <div class="bg-gradient-to-l from-emerald-900 via-emerald-800 to-teal-900 text-white rounded-2xl p-5 shadow-md">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+            <h2 class="text-base sm:text-lg font-extrabold">ساحة التحدي المباشر</h2>
+            <span id="arena-mode-badge" class="text-xs bg-white/15 px-2.5 py-0.5 rounded-full font-semibold">تحدي مُجمّع</span>
+          </div>
+          <button id="btn-sim-opponent" type="button" class="text-xs bg-white/15 hover:bg-white/25 border border-white/20 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition cursor-pointer">
+            <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-300"></i>
+            محاكاة تقدم المنافس
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
+          <!-- You -->
+          <div class="md:col-span-5 bg-white/10 border border-white/15 rounded-xl p-3.5">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <div id="arena-you-avatar" class="w-9 h-9 rounded-full bg-amber-400 text-emerald-950 font-extrabold flex items-center justify-center">أ</div>
+                <div>
+                  <div class="font-bold text-sm flex items-center gap-1.5">
+                    <span id="arena-you-name">أحمد</span>
+                    <span class="text-[11px] text-amber-200">(أنت)</span>
+                  </div>
+                  <div id="arena-you-id" class="font-num text-[11px] text-emerald-200">#1011</div>
+                </div>
+              </div>
+              <div id="arena-you-pct" class="font-num text-xl font-extrabold text-amber-300">0%</div>
+            </div>
+            <div class="h-2.5 bg-emerald-950/60 rounded-full overflow-hidden">
+              <div id="arena-you-bar" class="h-full bg-gradient-to-l from-amber-400 to-amber-300 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- VS -->
+          <div class="md:col-span-1 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-full bg-amber-500 text-emerald-950 font-num font-black text-sm flex items-center justify-center shadow">VS</div>
+          </div>
+
+          <!-- Opponent -->
+          <div class="md:col-span-5 bg-white/10 border border-white/15 rounded-xl p-3.5">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <div id="arena-opp-avatar" class="w-9 h-9 rounded-full bg-emerald-200 text-emerald-950 font-extrabold flex items-center justify-center">ع</div>
+                <div>
+                  <div id="arena-opp-name" class="font-bold text-sm">عمر خالد</div>
+                  <div id="arena-opp-id" class="font-num text-[11px] text-emerald-200">#1002</div>
+                </div>
+              </div>
+              <div id="arena-opp-pct" class="font-num text-xl font-extrabold text-emerald-200">0%</div>
+            </div>
+            <div class="h-2.5 bg-emerald-950/60 rounded-full overflow-hidden">
+              <div id="arena-opp-bar" class="h-full bg-gradient-to-l from-emerald-300 to-teal-300 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tasks Grid: Tasbeeh Counters -->
+      <div id="counters-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- SubhanAllah 100 -->
+        <div id="card-subhan" class="task-card bg-white rounded-2xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between gap-4">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">ورد التسبيح</span>
+              <span id="status-subhan" class="text-xs font-bold text-stone-400">قيد التنفيذ</span>
+            </div>
+            <h3 class="font-hadith text-2xl font-bold text-emerald-950">سُبْحَانَ اللَّهِ</h3>
+            <p class="text-xs text-stone-500 mt-1">الهدف اليومي: ١٠٠ مرة • +٥٠ نقطة عند الإتمام</p>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-end justify-between">
+              <span id="count-subhan" class="font-num text-3xl font-extrabold text-emerald-800">0</span>
+              <span class="font-num text-sm font-semibold text-stone-400">/ 100</span>
+            </div>
+            <div class="h-2.5 bg-stone-100 rounded-full overflow-hidden">
+              <div id="bar-subhan" class="h-full bg-emerald-600 rounded-full transition-all duration-200" style="width: 0%"></div>
+            </div>
+            <div class="flex items-center gap-2 pt-2">
+              <button data-counter="subhan" data-step="1" type="button" class="counter-btn tap-btn flex-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-xl transition cursor-pointer">
+                سبّح (+1)
+              </button>
+              <button data-counter="subhan" data-step="10" type="button" class="counter-btn tap-btn px-3 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-num font-bold text-sm rounded-xl transition cursor-pointer" title="إضافة ١٠ للتجربة السريعة">
+                +10
+              </button>
+              <button data-reset="subhan" type="button" class="reset-btn p-2.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-xl transition cursor-pointer" title="إعادة ضبط">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Salawat 100 -->
+        <div id="card-salawat" class="task-card bg-white rounded-2xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between gap-4">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">الصلاة على النبي</span>
+              <span id="status-salawat" class="text-xs font-bold text-stone-400">قيد التنفيذ</span>
+            </div>
+            <h3 class="font-hadith text-2xl font-bold text-emerald-950">اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ ﷺ</h3>
+            <p class="text-xs text-stone-500 mt-1">الهدف اليومي: ١٠٠ مرة • +٥٠ نقطة عند الإتمام</p>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-end justify-between">
+              <span id="count-salawat" class="font-num text-3xl font-extrabold text-amber-600">0</span>
+              <span class="font-num text-sm font-semibold text-stone-400">/ 100</span>
+            </div>
+            <div class="h-2.5 bg-stone-100 rounded-full overflow-hidden">
+              <div id="bar-salawat" class="h-full bg-amber-500 rounded-full transition-all duration-200" style="width: 0%"></div>
+            </div>
+            <div class="flex items-center gap-2 pt-2">
+              <button data-counter="salawat" data-step="1" type="button" class="counter-btn tap-btn flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl transition cursor-pointer">
+                صلِّ على النبي (+1)
+              </button>
+              <button data-counter="salawat" data-step="10" type="button" class="counter-btn tap-btn px-3 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-num font-bold text-sm rounded-xl transition cursor-pointer" title="إضافة ١٠ للتجربة السريعة">
+                +10
+              </button>
+              <button data-reset="salawat" type="button" class="reset-btn p-2.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-xl transition cursor-pointer" title="إعادة ضبط">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Istighfar 70 -->
+        <div id="card-istighfar" class="task-card bg-white rounded-2xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between gap-4">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-200">ورد الاستغفار</span>
+              <span id="status-istighfar" class="text-xs font-bold text-stone-400">قيد التنفيذ</span>
+            </div>
+            <h3 class="font-hadith text-2xl font-bold text-emerald-950">أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ</h3>
+            <p class="text-xs text-stone-500 mt-1">الهدف اليومي: ٧٠ مرة • +٤٠ نقطة عند الإتمام</p>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-end justify-between">
+              <span id="count-istighfar" class="font-num text-3xl font-extrabold text-teal-700">0</span>
+              <span class="font-num text-sm font-semibold text-stone-400">/ 70</span>
+            </div>
+            <div class="h-2.5 bg-stone-100 rounded-full overflow-hidden">
+              <div id="bar-istighfar" class="h-full bg-teal-600 rounded-full transition-all duration-200" style="width: 0%"></div>
+            </div>
+            <div class="flex items-center gap-2 pt-2">
+              <button data-counter="istighfar" data-step="1" type="button" class="counter-btn tap-btn flex-1 bg-teal-700 hover:bg-teal-800 text-white font-bold py-2.5 rounded-xl transition cursor-pointer">
+                استغفر (+1)
+              </button>
+              <button data-counter="istighfar" data-step="10" type="button" class="counter-btn tap-btn px-3 py-2.5 bg-teal-100 hover:bg-teal-200 text-teal-900 font-num font-bold text-sm rounded-xl transition cursor-pointer" title="إضافة ١٠ للتجربة السريعة">
+                +10
+              </button>
+              <button data-reset="istighfar" type="button" class="reset-btn p-2.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-xl transition cursor-pointer" title="إعادة ضبط">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Morning & Evening Adhkar Cards -->
+      <div id="adhkar-lists-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Morning Adhkar -->
+        <div id="card-morning" class="task-card bg-white rounded-2xl border border-stone-200 shadow-sm p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                <i data-lucide="sun" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-extrabold text-base text-emerald-950">أذكار الصباح</h3>
+                <p class="text-xs text-stone-500">+٤٠ نقطة عند إتمام القائمة</p>
+              </div>
+            </div>
+            <button data-complete-all="morning" type="button" class="complete-all-btn text-xs font-bold text-emerald-700 hover:bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 transition cursor-pointer">
+              تحديد الكل
+            </button>
+          </div>
+          <div id="list-morning" class="space-y-2.5"></div>
+        </div>
+
+        <!-- Evening Adhkar -->
+        <div id="card-evening" class="task-card bg-white rounded-2xl border border-stone-200 shadow-sm p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                <i data-lucide="moon-star" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-extrabold text-base text-emerald-950">أذكار المساء</h3>
+                <p class="text-xs text-stone-500">+٤٠ نقطة عند إتمام القائمة</p>
+              </div>
+            </div>
+            <button data-complete-all="evening" type="button" class="complete-all-btn text-xs font-bold text-emerald-700 hover:bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 transition cursor-pointer">
+              تحديد الكل
+            </button>
+          </div>
+          <div id="list-evening" class="space-y-2.5"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: SAHIH AL-BUKHARI CUMULATIVE MEMORIZATION -->
+    <section id="view-hadith" class="hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-lg font-extrabold text-emerald-950 flex items-center gap-2">
+              <i data-lucide="book-marked" class="w-5 h-5 text-amber-600"></i>
+              مسار حفظ أحاديث صحيح البخاري (نظام الاختبار التراكمي)
+            </h2>
+            <p class="text-xs sm:text-sm text-stone-500 mt-1">
+              احفظ الحديث ثم اجتز الاختبار لفتح الحديث التالي. عند الحديث الثاني يُختبر حفظك في الحديث الأول والثاني معاً، وهكذا تراكمياً لتثبيت الحفظ!
+            </p>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 text-center shrink-0">
+            <div class="text-[11px] text-emerald-700 font-bold">الأحاديث المُتقَنة</div>
+            <div id="hadith-mastered-count" class="font-num text-xl font-extrabold text-emerald-900">0 / 5</div>
+          </div>
+        </div>
+
+        <!-- Stepper Roadmap -->
+        <div id="hadith-roadmap" class="grid grid-cols-2 sm:grid-cols-5 gap-2.5"></div>
+      </div>
+
+      <!-- Active Hadith Study Card OR Cumulative Quiz Card -->
+      <div id="hadith-study-panel" class="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-3">
+          <div class="flex items-center gap-2">
+            <span id="study-hadith-badge" class="text-xs font-bold bg-amber-100 text-amber-900 px-3 py-1 rounded-full">الحديث رقم ١</span>
+            <span id="study-hadith-ref" class="text-xs font-semibold text-stone-500">صحيح البخاري (1)</span>
+          </div>
+          <button id="btn-toggle-blur" type="button" class="text-xs font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 transition cursor-pointer">
+            <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
+            وضع التسميع (إخفاء كلمات)
+          </button>
+        </div>
+
+        <div class="bg-[#faf8f4] border border-amber-200/70 rounded-2xl p-5 sm:p-6 text-center space-y-3">
+          <div id="study-hadith-narrator" class="text-xs sm:text-sm font-bold text-emerald-800">عن عمر بن الخطاب رضي الله عنه قال: سمعت رسول الله ﷺ يقول:</div>
+          <p id="study-hadith-text" class="font-hadith text-2xl sm:text-3xl font-bold text-emerald-950 leading-loose"></p>
+        </div>
+
+        <div class="bg-emerald-50/70 border border-emerald-100 rounded-xl p-4">
+          <div class="text-xs font-bold text-emerald-900 mb-1">فائدة سريعة لتثبيت المعنى:</div>
+          <p id="study-hadith-meaning" class="text-sm text-stone-700 leading-relaxed"></p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+          <div id="quiz-scope-note" class="text-xs sm:text-sm font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-3.5 py-2 rounded-xl">
+            الاختبار الآن سيختبرك في: الحديث ١
+          </div>
+          <button id="btn-start-quiz" type="button" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-6 py-3 rounded-xl shadow-sm transition cursor-pointer">
+            <i data-lucide="clipboard-check" class="w-5 h-5 text-amber-300"></i>
+            حفظتُ الحديث — ابدأ الاختبار التراكمي
+          </button>
+        </div>
+      </div>
+
+      <!-- Cumulative Quiz Panel -->
+      <div id="hadith-quiz-panel" class="hidden bg-white rounded-2xl border-2 border-emerald-700 shadow-md p-5 sm:p-6 space-y-5">
+        <div class="flex items-center justify-between border-b border-stone-100 pb-3">
+          <div>
+            <h3 id="quiz-title" class="text-base sm:text-lg font-extrabold text-emerald-950">الاختبار التراكمي للحفظ</h3>
+            <p id="quiz-subtitle" class="text-xs text-stone-500">أجب بدقة لإثبات حفظك وفتح الحديث التالي (+٧٥ نقطة)</p>
+          </div>
+          <button id="btn-cancel-quiz" type="button" class="text-xs font-bold text-stone-500 hover:text-stone-800 px-3 py-1.5 rounded-lg bg-stone-100 cursor-pointer">
+            العودة للمراجعة
+          </button>
+        </div>
+        <div id="quiz-questions-wrap" class="space-y-4"></div>
+        <div id="quiz-result-banner" class="hidden rounded-xl p-4 text-sm font-bold"></div>
+        <div class="flex justify-end gap-2">
+          <button id="btn-submit-quiz" type="button" class="bg-amber-500 hover:bg-amber-600 text-emerald-950 font-extrabold px-6 py-2.5 rounded-xl transition cursor-pointer">
+            اعتماد الإجابات
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: LEADERBOARD -->
+    <section id="view-leaderboard" class="hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div>
+            <h2 class="text-lg font-extrabold text-emerald-950 flex items-center gap-2">
+              <i data-lucide="award" class="w-5 h-5 text-amber-500"></i>
+              لوحة المتصدرين اليومية
+            </h2>
+            <p class="text-xs sm:text-sm text-stone-500 mt-0.5">أعلى المشاركين التزاماً بتحديات الأذكار وحفظ صحيح البخاري في قسمك</p>
+          </div>
+          <span id="leaderboard-division-badge" class="text-xs font-bold bg-emerald-100 text-emerald-900 px-3 py-1.5 rounded-full">قسم الأولاد فقط</span>
+        </div>
+
+        <!-- Podium Top 3 -->
+                <div id="lb-periods" class="inline-flex bg-stone-100 p-1 rounded-xl gap-1 mb-4">
+          <button data-period="day" type="button" class="lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">اليوم</button>
+          <button data-period="week" type="button" class="lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">هذا الأسبوع</button>
+          <button data-period="all" type="button" class="lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">الإجمالي</button>
+        </div>
+        <div id="leaderboard-podium" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6"></div>
+
+        <!-- Full Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-right border-collapse">
+            <thead>
+              <tr class="border-b border-stone-200 text-xs text-stone-500">
+                <th class="py-2.5 px-3">الترتيب</th>
+                <th class="py-2.5 px-3">الرقم التعريفي</th>
+                <th class="py-2.5 px-3">الاسم</th>
+                <th class="py-2.5 px-3">تحديات اليوم</th>
+                <th class="py-2.5 px-3">أحاديث محفوظة</th>
+                <th class="py-2.5 px-3">سلسلة الأيام</th>
+                <th class="py-2.5 px-3">السكور</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody" class="divide-y divide-stone-100 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== v2: login gate ===== -->
+<div id="gate" class="fixed inset-0 z-[60] islamic-pattern flex items-center justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 my-auto">
+    <div class="text-center space-y-1">
+      <div class="mx-auto w-14 h-14 rounded-2xl bg-emerald-900 flex items-center justify-center"><i data-lucide="sparkles" class="w-7 h-7 text-amber-300"></i></div>
+      <h2 class="text-2xl font-extrabold text-emerald-950">سابقون</h2>
+      <p class="text-xs text-stone-500">تحدّي الأذكار وحفظ صحيح البخاري · أولاد مع أولاد وبنات مع بنات</p>
+    </div>
+    <div class="grid grid-cols-2 bg-stone-100 p-1 rounded-xl gap-1">
+      <button id="gate-tab-login" type="button" class="py-2 rounded-lg text-sm font-bold cursor-pointer">دخول</button>
+      <button id="gate-tab-reg" type="button" class="py-2 rounded-lg text-sm font-bold cursor-pointer">حساب جديد</button>
+    </div>
+    <form id="gate-login" class="space-y-3">
+      <div><label class="block text-xs font-bold text-stone-700 mb-1">الرقم التعريفي</label>
+        <input id="login-id" inputmode="numeric" required placeholder="مثال: 1011" class="font-num w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600" /></div>
+      <div><label class="block text-xs font-bold text-stone-700 mb-1">الرمز السري (PIN)</label>
+        <input id="login-pin" type="password" inputmode="numeric" required placeholder="••••" class="font-num w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600" /></div>
+      <div id="login-err" class="hidden text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"></div>
+      <button type="submit" class="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold py-2.5 rounded-xl cursor-pointer">دخول</button>
+    </form>
+    <form id="gate-reg" class="space-y-3 hidden">
+      <div><label class="block text-xs font-bold text-stone-700 mb-1">اسم الظهور (يُفضّل اسم مستعار، بدون اسم العائلة)</label>
+        <input id="reg-name" required maxlength="24" placeholder="مثال: يوسف م." class="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600" /></div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <label class="cursor-pointer"><input type="radio" name="reg-gender" value="male" checked class="peer sr-only" />
+          <div class="p-2.5 rounded-xl border-2 border-stone-200 peer-checked:border-emerald-700 peer-checked:bg-emerald-50 text-center font-bold text-sm">قسم الأولاد</div></label>
+        <label class="cursor-pointer"><input type="radio" name="reg-gender" value="female" class="peer sr-only" />
+          <div class="p-2.5 rounded-xl border-2 border-stone-200 peer-checked:border-emerald-700 peer-checked:bg-emerald-50 text-center font-bold text-sm">قسم البنات</div></label>
+      </div>
+      <div><label class="block text-xs font-bold text-stone-700 mb-1">رمز سري من ٤ أرقام أو أكثر</label>
+        <input id="reg-pin" type="password" inputmode="numeric" pattern="[0-9]{4,12}" required placeholder="••••" class="font-num w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600" /></div>
+      <div class="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs">
+        <span class="font-semibold text-amber-900">رقمك التعريفي سيكون:</span><span id="reg-next-id" class="font-num font-extrabold text-amber-800 text-sm">#1011</span></div>
+      <div id="reg-err" class="hidden text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"></div>
+      <button type="submit" class="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold py-2.5 rounded-xl cursor-pointer">إنشاء الحساب وبدء التحدي</button>
+    </form>
+    <p class="text-[11px] text-stone-400 leading-relaxed text-center">نسخة تجريبية: الحسابات محفوظة على هذا الجهاز فقط. عند ربط قاعدة بيانات حقيقية تصبح الحسابات والمنافسة والإشعارات شغالة بين كل الأجهزة.</p>
+  </div>
+</div>
+<!-- account menu -->
+<div id="acct-menu" class="hidden fixed inset-0 z-50 bg-black/40 flex items-start justify-center p-4 pt-24">
+  <div class="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl space-y-3">
+    <div class="flex items-center justify-between"><h3 class="font-extrabold text-emerald-950">حسابي</h3>
+      <button id="acct-close" type="button" class="p-1.5 rounded-lg hover:bg-stone-100 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <div id="acct-info" class="text-sm text-stone-700 space-y-1"></div>
+    <button id="acct-logout" type="button" class="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold py-2.5 rounded-xl cursor-pointer">تسجيل الخروج</button>
+    <button id="acct-delete" type="button" class="w-full text-rose-700 hover:bg-rose-50 border border-rose-200 font-bold py-2 rounded-xl text-sm cursor-pointer">حذف حسابي من هذا الجهاز</button>
+  </div>
+</div>
+
+  <!-- Registration / Account Switch Modal -->
+  <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-extrabold text-emerald-950">تسجيل حساب جديد برقم تسلسلي</h3>
+        <button id="btn-close-auth" type="button" class="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs text-stone-500 leading-relaxed">
+        كل زائر يسجل اسمه يحصل تلقائياً على رقم تعريفي تسلسلي فريد، ويدخل قسمه المخصص (أولاد مع أولاد أو بنات مع بنات).
+      </p>
+      <form id="auth-form" class="space-y-4">
+        <div>
+          <label for="input-user-name" class="block text-xs font-bold text-stone-700 mb-1">الاسم</label>
+          <input id="input-user-name" type="text" required placeholder="مثال: يوسف محمد أو سارة أحمد" class="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+        </div>
+        <div>
+          <span class="block text-xs font-bold text-stone-700 mb-1.5">القسم (لضمان منافسة الأولاد مع الأولاد والبنات مع البنات)</span>
+          <div class="grid grid-cols-2 gap-2.5">
+            <label class="cursor-pointer">
+              <input type="radio" name="gender" value="male" checked class="peer sr-only" />
+              <div class="p-3 rounded-xl border-2 border-stone-200 peer-checked:border-emerald-700 peer-checked:bg-emerald-50 text-center font-bold text-sm transition">
+                قسم الأولاد
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="gender" value="female" class="peer sr-only" />
+              <div class="p-3 rounded-xl border-2 border-stone-200 peer-checked:border-emerald-700 peer-checked:bg-emerald-50 text-center font-bold text-sm transition">
+                قسم البنات
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs">
+          <span class="font-semibold text-amber-900">الرقم التعريفي التسلسلي القادم:</span>
+          <span id="next-id-preview" class="font-num font-extrabold text-amber-800 text-sm">#1012</span>
+        </div>
+        <button type="submit" class="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold py-2.5 rounded-xl transition cursor-pointer">
+          تسجيل وبدء التحدي
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notifications Drawer Modal -->
+  <div id="notif-modal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-end">
+    <div class="bg-white w-full max-w-md h-full shadow-2xl flex flex-col">
+      <div class="p-4 border-b border-stone-200 flex items-center justify-between bg-emerald-900 text-white">
+        <div class="flex items-center gap-2">
+          <i data-lucide="bell-ring" class="w-5 h-5 text-amber-300"></i>
+          <h3 class="font-extrabold text-base">مركز التنبيهات</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-mark-read" type="button" class="text-xs bg-white/15 hover:bg-white/25 px-2.5 py-1 rounded-lg cursor-pointer">تحديد كمقروء</button>
+          <button id="btn-close-notif" type="button" class="p-1 rounded-lg hover:bg-white/15 cursor-pointer">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+            <div id="notif-settings" class="p-4 border-b border-stone-200 bg-stone-50 space-y-3 text-sm"></div>
+      <div id="notif-list" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+    </div>
+  </div>
+
+  <script>
+    // ===========================
+    // 1. VERIFIED STATIC DATASETS
+    // ===========================
+    const MORNING_ADHKAR = [
+      { id: 'm1', text: 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ', repeat: 'مرة واحدة' },
+      { id: 'm2', text: 'اللَّهُمَّ بِكَ أَصْبَحْنَا، وَبِكَ أَمْسَيْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ النُّشُورُ', repeat: 'مرة واحدة' },
+      { id: 'm3', text: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ', repeat: '٣ مرات' },
+      { id: 'm4', text: 'سَيِّدُ الاسْتِغْفَارِ: اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ...', repeat: 'مرة واحدة' }
+    ];
+
+    const EVENING_ADHKAR = [
+      { id: 'e1', text: 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ', repeat: 'مرة واحدة' },
+      { id: 'e2', text: 'اللَّهُمَّ بِكَ أَمْسَيْنَا، وَبِكَ أَصْبَحْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ الْمَصِيرُ', repeat: 'مرة واحدة' },
+      { id: 'e3', text: 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ', repeat: '٣ مرات' },
+      { id: 'e4', text: 'رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ ﷺ نَبِيًّا', repeat: '٣ مرات' }
+    ];
+
+    // Verified Sahih al-Bukhari Hadiths
+    const BUKHARI_HADITHS = [
+      {
+        order: 1,
+        ref: 'صحيح البخاري — حديث رقم ١',
+        narrator: 'عن عمر بن الخطاب رضي الله عنه قال: سمعت رسول الله ﷺ يقول:',
+        text: 'إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى',
+        blurIndices: [1, 2, 5, 6],
+        meaning: 'صحة الأعمال وقبولها وثوابها عند الله مرتبط بإخلاص النية، وكل إنسان يُجزى بحسب ما قصده بقلبه.',
+        quiz: {
+          prompt: 'أكمل حديث صحيح البخاري (رقم ١): «إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ ......»',
+          options: ['مَا نَوَى', 'مَا سَعَى', 'مَا أَحَبَّ', 'مَا عَمِلَ'],
+          answerIndex: 0
+        }
+      },
+      {
+        order: 2,
+        ref: 'صحيح البخاري — حديث رقم ١٣',
+        narrator: 'عن أنس بن مالك رضي الله عنه عن النبي ﷺ قال:',
+        text: 'لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لِأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ',
+        blurIndices: [3, 4, 6, 7],
+        meaning: 'من كمال الإيمان سلامة الصدر ومحبة الخير للمسلمين كما يحب الإنسان الخير لنفسه.',
+        quiz: {
+          prompt: 'أكمل حديث صحيح البخاري (رقم ١٣): «لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لِأَخِيهِ ......»',
+          options: ['مَا يُحِبُّ لِوَلَدِهِ', 'مَا يُحِبُّ لِنَفْسِهِ', 'مَا يُحِبُّ لِجَارِهِ', 'مَا يَرْضَاهُ لَهُ'],
+          answerIndex: 1
+        }
+      },
+      {
+        order: 3,
+        ref: 'صحيح البخاري — حديث رقم ٥٠٢٧',
+        narrator: 'عن عثمان بن عفان رضي الله عنه عن النبي ﷺ قال:',
+        text: 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ',
+        blurIndices: [2, 3, 4],
+        meaning: 'أفضل الناس وأعلاهم منزلة من جمع بين تعلم القرآن الكريم تلاوةً وفهماً وعملاً، وتعليمه للآخرين.',
+        quiz: {
+          prompt: 'من هو راوي حديث «خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ» في صحيح البخاري (٥٠٢٧)؟',
+          options: ['أبو هريرة رضي الله عنه', 'أنس بن مالك رضي الله عنه', 'عثمان بن عفان رضي الله عنه', 'عبد الله بن مسعود رضي الله عنه'],
+          answerIndex: 2
+        }
+      },
+      {
+        order: 4,
+        ref: 'صحيح البخاري — حديث رقم ٦٤٠٦',
+        narrator: 'عن أبي هريرة رضي الله عنه قال: قال النبي ﷺ:',
+        text: 'كَلِمَتَانِ خَفِيفَتَانِ عَلَى اللِّسَانِ، ثَقِيلَتَانِ فِي الْمِيزَانِ، حَبِيبَتَانِ إِلَى الرَّحْمَنِ: سُبْحَانَ اللَّهِ الْعَظِيمِ، سُبْحَانَ اللَّهِ وَبِحَمْدِهِ',
+        blurIndices: [1, 4, 7, 11, 14],
+        meaning: 'فضل التسبيح والتحميد؛ فعبارتان يسيرتان في النطق لكن أجرهما عظيم وثقيل في ميزان الحسنات.',
+        quiz: {
+          prompt: 'أكمل حديث صحيح البخاري (رقم ٦٤٠٦): «كَلِمَتَانِ خَفِيفَتَانِ عَلَى اللِّسَانِ، ثَقِيلَتَانِ فِي الْمِيزَانِ، ......»',
+          options: ['عَظِيمَتَانِ فِي الْجِنَانِ', 'حَبِيبَتَانِ إِلَى الرَّحْمَنِ', 'نُورٌ فِي الْقَلْبِ وَالْجَنَانِ', 'ذُخْرٌ لِيَوْمِ الْمِيزَانِ'],
+          answerIndex: 1
+        }
+      },
+      {
+        order: 5,
+        ref: 'صحيح البخاري — حديث رقم ٦٠١٨',
+        narrator: 'عن أبي هريرة رضي الله عنه قال: قال رسول الله ﷺ:',
+        text: 'مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلَا يُؤْذِ جَارَهُ، وَمَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيُكْرِمْ ضَيْفَهُ، وَمَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ',
+        blurIndices: [6, 7, 14, 15, 22, 24],
+        meaning: 'يجمع الحديث ثلاثاً من أعظم مكارم الأخلاق المرتبطة بالإيمان: كف الأذى عن الجار، وإكرام الضيف، وحفظ اللسان.',
+        quiz: {
+          prompt: 'في حديث صحيح البخاري (رقم ٦٠١٨)، ما الخصلة الثالثة المذكورة بعد كف أذى الجار وإكرام الضيف؟',
+          options: ['فَلْيَصِلْ رَحِمَهُ', 'فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ', 'فَلْيُفْشِ السَّلَامَ', 'فَلْيَتَصَدَّقْ بِمَالِهِ'],
+          answerIndex: 1
+        }
+      }
+    ];
+
+    const INITIAL_USERS = [
+      { id: 1001, name: 'عبدالرحمن طارق', gender: 'male', score: 620, dailyDone: 5, streak: 12, hadiths: 4 },
+      { id: 1002, name: 'عمر خالد', gender: 'male', score: 480, dailyDone: 4, streak: 7, hadiths: 3 },
+      { id: 1003, name: 'يوسف محمود', gender: 'male', score: 390, dailyDone: 3, streak: 5, hadiths: 2 },
+      { id: 1004, name: 'معاذ سامي', gender: 'male', score: 260, dailyDone: 2, streak: 3, hadiths: 1 },
+      { id: 1005, name: 'بلال حسن', gender: 'male', score: 180, dailyDone: 1, streak: 2, hadiths: 1 },
+      { id: 1006, name: 'مريم عبدالله', gender: 'female', score: 650, dailyDone: 5, streak: 14, hadiths: 4 },
+      { id: 1007, name: 'سارة إبراهيم', gender: 'female', score: 510, dailyDone: 4, streak: 9, hadiths: 3 },
+      { id: 1008, name: 'نور الهدى علي', gender: 'female', score: 410, dailyDone: 3, streak: 6, hadiths: 2 },
+      { id: 1009, name: 'فاطمة الزهراء', gender: 'female', score: 290, dailyDone: 2, streak: 4, hadiths: 1 },
+      { id: 1010, name: 'حبيبة كريم', gender: 'female', score: 210, dailyDone: 2, streak: 2, hadiths: 1 }
+    ];
+
+    // ===========================
+    // 2. APPLICATION STATE
+    // ===========================
+    const state = {
+      nextSequentialId: 1012,
+      users: [...INITIAL_USERS],
+      currentUser: {
+        id: 1011,
+        name: 'أحمد',
+        gender: 'male',
+        score: 0,
+        dailyDone: 0,
+        streak: 1,
+        hadiths: 0
+      },
+      activeTab: 'challenges',
+      challengeMode: 'combined', // 'combined' | 'single'
+      singleTaskKey: 'subhan',
+      opponentId: 1002,
+      opponentPct: 38,
+      tasks: {
+        subhan: 0,
+        salawat: 0,
+        istighfar: 0,
+        morning: [false, false, false, false],
+        evening: [false, false, false, false]
+      },
+      awarded: {
+        subhan: false,
+        salawat: false,
+        istighfar: false,
+        morning: false,
+        evening: false,
+        combinedBonus: false
+      },
+      hadith: {
+        unlockedIndex: 0, // 0..4
+        selectedIndex: 0,
+        mastered: [], // array of indices
+        blurMode: false,
+        quizActive: false,
+        quizAnswers: {}
+      },
+      notifications: [
+        {
+          id: 1,
+          title: 'مرحباً بك في سابقون!',
+          body: 'حصلت على الرقم التعريفي التسلسلي #1011. ابدأ تحديك اليومي الآن!',
+          time: 'الآن',
+          unread: true
+        }
+      ],
+      simHourOffset: 0
+    };
+
+    // ===========================
+    // 3. HELPERS & NOTIFICATIONS
+    // ===========================
+    function getSameGenderPeers() {
+      return state.users.filter(u => u.gender === state.currentUser.gender && u.id !== state.currentUser.id);
+    }
+
+    function getCurrentOpponent() {
+      const peers = getSameGenderPeers();
+      let opp = peers.find(u => u.id === state.opponentId);
+      if (!opp && peers.length > 0) {
+        opp = peers[0];
+        state.opponentId = opp.id;
+      }
+      return opp;
+    }
+
+    function addNotification(title, body, showToast = true) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      state.notifications.unshift({
+        id: Date.now() + Math.random(),
+        title,
+        body,
+        time: timeStr,
+        unread: true
+      });
+      renderNotifications();
+      if (showToast) {
+        triggerToast(title, body);
+      }
+    }
+
+    function triggerToast(title, body) {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = 'toast-enter pointer-events-auto bg-emerald-950 text-white border border-amber-400/40 rounded-xl shadow-xl p-3.5 flex items-start gap-3';
+      el.innerHTML = `
+        <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+          <i data-lucide="bell-ring" class="w-4 h-4"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-extrabold text-amber-300">${title}</div>
+          <div class="text-xs text-emerald-50/95 mt-0.5 leading-relaxed">${body}</div>
+        </div>
+      `;
+      container.appendChild(el);
+      if (window.lucide) lucide.createIcons();
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => el.remove(), 320);
+      }, 4200);
+    }
+
+    function fireConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 70, spread: 65, origin: { y: 0.65 } });
+      }
+    }
+
+    function getDayTimeMetrics() {
+      const now = new Date();
+      const elapsedHours = (now.getHours() + state.simHourOffset) % 24;
+      const elapsedMins = now.getMinutes();
+      const totalElapsedMin = elapsedHours * 60 + elapsedMins;
+      const remainingMin = Math.max(0, 24 * 60 - totalElapsedMin);
+      const remHours = Math.floor(remainingMin / 60);
+      const remMins = remainingMin % 60;
+      const pct = Math.min(100, Math.round((totalElapsedMin / (24 * 60)) * 100));
+      return { elapsedHours, elapsedMins, remHours, remMins, pct };
+    }
+
+    function updateCountdownBar() {
+      const { elapsedHours, elapsedMins, remHours, remMins, pct } = getDayTimeMetrics();
+      const textEl = document.getElementById('countdown-text');
+      const barEl = document.getElementById('day-progress-bar');
+      textEl.textContent = `عدّى ${elapsedHours} ساعة و ${elapsedMins} دقيقة من اليوم — فاضل لك ${remHours} ساعة و ${remMins} دقيقة على انتهاء التحدي`;
+      barEl.style.width = `${Math.max(4, pct)}%`;
+    }
+
+    // ===========================
+    // 4. PROGRESS & SCORING LOGIC
+    // ===========================
+    function getTaskProgress(key) {
+      if (key === 'subhan') return Math.min(1, state.tasks.subhan / 100);
+      if (key === 'salawat') return Math.min(1, state.tasks.salawat / 100);
+      if (key === 'istighfar') return Math.min(1, state.tasks.istighfar / 70);
+      if (key === 'morning') return state.tasks.morning.filter(Boolean).length / MORNING_ADHKAR.length;
+      if (key === 'evening') return state.tasks.evening.filter(Boolean).length / EVENING_ADHKAR.length;
+      return 0;
+    }
+
+    function calculateUserProgressPct() {
+      if (state.challengeMode === 'single') {
+        return Math.round(getTaskProgress(state.singleTaskKey) * 100);
+      }
+      const keys = ['subhan', 'salawat', 'istighfar', 'morning', 'evening'];
+      const avg = keys.reduce((sum, k) => sum + getTaskProgress(k), 0) / keys.length;
+      return Math.round(avg * 100);
+    }
+
+    function checkTaskAwards() {
+      const pointsMap = { subhan: 50, salawat: 50, istighfar: 40, morning: 40, evening: 40 };
+      const labelsMap = {
+        subhan: 'سبحان الله (١٠٠ مرة)',
+        salawat: 'الصلاة على النبي ﷺ (١٠٠ مرة)',
+        istighfar: 'الاستغفار (٧٠ مرة)',
+        morning: 'أذكار الصباح',
+        evening: 'أذكار المساء'
+      };
+
+      let completedCount = 0;
+      Object.keys(pointsMap).forEach(key => {
+        const done = getTaskProgress(key) >= 1;
+        if (done) completedCount++;
+        if (done && !state.awarded[key]) {
+          state.awarded[key] = true;
+          state.currentUser.score += pointsMap[key];
+          addNotification('أحسنت! أتممت ورداً يومياً', `أكملت ${labelsMap[key]} وحصلت على +${pointsMap[key]} نقطة.`);
+          fireConfetti();
+        }
+      });
+
+      state.currentUser.dailyDone = completedCount;
+
+      if (completedCount === 5 && !state.awarded.combinedBonus) {
+        state.awarded.combinedBonus = true;
+        state.currentUser.score += 100;
+        addNotification('إنجاز اليوم الكامل!', 'أتممت التحدي المجمّع بالكامل وحصلت على مكافأة إضافية +١٠٠ نقطة!');
+        fireConfetti();
+      }
+    }
+
+    // ===========================
+    // 5. RENDERING FUNCTIONS
+    // ===========================
+    function renderHeader() {
+      const u = state.currentUser;
+      document.getElementById('header-avatar').textContent = u.name.trim().charAt(0) || 'م';
+      document.getElementById('header-user-name').textContent = u.name;
+      document.getElementById('header-user-id').textContent = `#${u.id}`;
+      document.getElementById('header-user-gender').textContent = u.gender === 'male' ? 'قسم الأولاد' : 'قسم البنات';
+      document.getElementById('header-user-score').textContent = `${u.score} نقطة`;
+      document.getElementById('total-visitors-count').textContent = `#${state.nextSequentialId - 1}`;
+      document.getElementById('next-id-preview').textContent = `#${state.nextSequentialId}`;
+    }
+
+    function renderTabs() {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        const isActive = btn.dataset.tab === state.activeTab;
+        btn.className = isActive
+          ? 'tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap cursor-pointer bg-emerald-800 text-white shadow-sm'
+          : 'tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap cursor-pointer text-stone-600 hover:bg-stone-100';
+      });
+      document.getElementById('view-challenges').classList.toggle('hidden', state.activeTab !== 'challenges');
+      document.getElementById('view-hadith').classList.toggle('hidden', state.activeTab !== 'hadith');
+      document.getElementById('view-leaderboard').classList.toggle('hidden', state.activeTab !== 'leaderboard');
+    }
+
+    function renderChallenges() {
+      const isCombined = state.challengeMode === 'combined';
+      const combBtn = document.getElementById('mode-combined-btn');
+      const singBtn = document.getElementById('mode-single-btn');
+      combBtn.className = isCombined
+        ? 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer bg-emerald-800 text-white shadow-xs'
+        : 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer text-stone-600 hover:text-stone-900';
+      singBtn.className = !isCombined
+        ? 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer bg-emerald-800 text-white shadow-xs'
+        : 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer text-stone-600 hover:text-stone-900';
+
+      document.getElementById('single-task-selector-wrap').classList.toggle('hidden', isCombined);
+      document.getElementById('single-task-select').value = state.singleTaskKey;
+
+      // Gender isolation label & opponent dropdown
+      const isMale = state.currentUser.gender === 'male';
+      document.getElementById('gender-lock-label').textContent = isMale ? 'أولاد مع أولاد فقط' : 'بنات مع بنات فقط';
+
+      const peers = getSameGenderPeers();
+      const oppSelect = document.getElementById('opponent-select');
+      oppSelect.innerHTML = peers.map(p =>
+        `<option value="${p.id}" ${p.id === state.opponentId ? 'selected' : ''}>#${p.id} — ${p.name} (${p.score} نقطة)</option>`
+      ).join('');
+
+      // Arena Head-to-Head
+      const opp = getCurrentOpponent();
+      const youPct = calculateUserProgressPct();
+      document.getElementById('arena-mode-badge').textContent = isCombined
+        ? 'تحدي مُجمّع (٥ مهام)'
+        : 'تحدي منفصل: ' + document.querySelector(`#single-task-select option[value="${state.singleTaskKey}"]`).textContent;
+
+      document.getElementById('arena-you-avatar').textContent = state.currentUser.name.trim().charAt(0) || 'أ';
+      document.getElementById('arena-you-name').textContent = state.currentUser.name;
+      document.getElementById('arena-you-id').textContent = `#${state.currentUser.id}`;
+      document.getElementById('arena-you-pct').textContent = `${youPct}%`;
+      document.getElementById('arena-you-bar').style.width = `${youPct}%`;
+
+      if (opp) {
+        document.getElementById('arena-opp-avatar').textContent = opp.name.trim().charAt(0);
+        document.getElementById('arena-opp-name').textContent = opp.name;
+        document.getElementById('arena-opp-id').textContent = `#${opp.id}`;
+        document.getElementById('arena-opp-pct').textContent = `${state.opponentPct}%`;
+        document.getElementById('arena-opp-bar').style.width = `${state.opponentPct}%`;
+      }
+
+      // Show/Hide cards depending on Combined vs Single mode
+      const allCardKeys = ['subhan', 'salawat', 'istighfar', 'morning', 'evening'];
+      allCardKeys.forEach(k => {
+        const card = document.getElementById(`card-${k}`);
+        const visible = isCombined || state.singleTaskKey === k;
+        card.classList.toggle('hidden', !visible);
+      });
+
+      // Counters UI
+      const targets = { subhan: 100, salawat: 100, istighfar: 70 };
+      Object.keys(targets).forEach(k => {
+        const val = state.tasks[k];
+        const max = targets[k];
+        const pct = Math.min(100, Math.round((val / max) * 100));
+        document.getElementById(`count-${k}`).textContent = val;
+        document.getElementById(`bar-${k}`).style.width = `${pct}%`;
+        const statusEl = document.getElementById(`status-${k}`);
+        if (val >= max) {
+          statusEl.textContent = 'مكتمل ✓';
+          statusEl.className = 'text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full';
+        } else {
+          statusEl.textContent = `${pct}%`;
+          statusEl.className = 'font-num text-xs font-bold text-stone-400';
+        }
+      });
+
+      // Adhkar Lists UI
+      renderAdhkarChecklist('morning', MORNING_ADHKAR);
+      renderAdhkarChecklist('evening', EVENING_ADHKAR);
+    }
+
+    function renderAdhkarChecklist(type, items) {
+      const wrap = document.getElementById(`list-${type}`);
+      wrap.innerHTML = items.map((item, idx) => {
+        const checked = state.tasks[type][idx];
+        return `
+          <label class="flex items-start gap-3 p-3 rounded-xl border transition cursor-pointer ${checked ? 'bg-emerald-50/70 border-emerald-300' : 'bg-stone-50/60 border-stone-200 hover:border-emerald-300'}">
+            <input type="checkbox" data-adhkar-type="${type}" data-adhkar-idx="${idx}" ${checked ? 'checked' : ''} class="adhkar-check mt-1 w-4 h-4 accent-emerald-700 rounded cursor-pointer shrink-0" />
+            <div class="flex-1">
+              <div class="font-hadith text-lg leading-relaxed ${checked ? 'text-emerald-900 line-through opacity-75' : 'text-stone-800'}">${item.text}</div>
+              <span class="inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${checked ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-100 text-amber-900'}">${item.repeat}</span>
+            </div>
+          </label>
+        `;
+      }).join('');
+    }
+
+    function renderHadithSection() {
+      document.getElementById('hadith-mastered-count').textContent = `${state.hadith.mastered.length} / ${BUKHARI_HADITHS.length}`;
+
+      // Roadmap stepper
+      const roadmap = document.getElementById('hadith-roadmap');
+      roadmap.innerHTML = BUKHARI_HADITHS.map((h, idx) => {
+        const isMastered = state.hadith.mastered.includes(idx);
+        const isUnlocked = idx <= state.hadith.unlockedIndex;
+        const isSelected = idx === state.hadith.selectedIndex;
+        let classes = 'p-3 rounded-xl border text-right transition flex flex-col gap-1 ';
+        if (isSelected) {
+          classes += 'border-emerald-700 bg-emerald-50 ring-2 ring-emerald-700/20 cursor-pointer';
+        } else if (isMastered) {
+          classes += 'border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50 cursor-pointer';
+        } else if (isUnlocked) {
+          classes += 'border-amber-300 bg-amber-50/50 hover:bg-amber-50 cursor-pointer';
+        } else {
+          classes += 'border-stone-200 bg-stone-50 opacity-60 cursor-not-allowed';
+        }
+        const statusLabel = isMastered ? 'مُتقَن ✓' : (isUnlocked ? 'مفتوح للحفظ' : 'مقفول 🔒');
+        return `
+          <button type="button" data-hadith-idx="${idx}" ${!isUnlocked ? 'disabled' : ''} class="hadith-step-btn ${classes}">
+            <div class="flex items-center justify-between w-full">
+              <span class="text-xs font-extrabold text-emerald-950">الحديث ${h.order}</span>
+              <span class="text-[10px] font-bold ${isMastered ? 'text-emerald-700' : (isUnlocked ? 'text-amber-700' : 'text-stone-400')}">${statusLabel}</span>
+            </div>
+            <div class="text-[11px] text-stone-500 truncate w-full">${h.ref.replace('صحيح البخاري — ', '')}</div>
+          </button>
+        `;
+      }).join('');
+
+      const studyPanel = document.getElementById('hadith-study-panel');
+      const quizPanel = document.getElementById('hadith-quiz-panel');
+      studyPanel.classList.toggle('hidden', state.hadith.quizActive);
+      quizPanel.classList.toggle('hidden', !state.hadith.quizActive);
+
+      if (!state.hadith.quizActive) {
+        const current = BUKHARI_HADITHS[state.hadith.selectedIndex];
+        document.getElementById('study-hadith-badge').textContent = `الحديث رقم ${current.order}`;
+        document.getElementById('study-hadith-ref').textContent = current.ref;
+        document.getElementById('study-hadith-narrator').textContent = current.narrator;
+        document.getElementById('study-hadith-meaning').textContent = current.meaning;
+
+        const words = current.text.split(' ');
+        const textHtml = words.map((w, i) => {
+          if (state.hadith.blurMode && current.blurIndices.includes(i)) {
+            return `<span class="blur-word" title="اضغط للكشف">${w}</span>`;
+          }
+          return w;
+        }).join(' ');
+        document.getElementById('study-hadith-text').innerHTML = `« ${textHtml} »`;
+
+        const scopeCount = state.hadith.selectedIndex + 1;
+        const scopeText = scopeCount === 1
+          ? 'الاختبار الآن سيختبرك في: الحديث ١ فقط'
+          : `اختبار تراكمي: سيختبرك الموقع الآن في الأحاديث من ١ إلى ${scopeCount} معاً للتأكد من ثبات الحفظ!`;
+        document.getElementById('quiz-scope-note').textContent = scopeText;
+      } else {
+        renderCumulativeQuiz();
+      }
+    }
+
+    function renderCumulativeQuiz() {
+      const count = state.hadith.selectedIndex + 1;
+      const subset = BUKHARI_HADITHS.slice(0, count);
+      document.getElementById('quiz-title').textContent = count === 1
+        ? 'اختبار حفظ الحديث ١'
+        : `الاختبار التراكمي (الأحاديث ١ إلى ${count} معاً)`;
+      document.getElementById('quiz-subtitle').textContent = `عدد الأسئلة: ${subset.length} — أجب عن جميع الأسئلة بنجاح لفتح الحديث التالي وإضافة +٧٥ نقطة`;
+
+      const wrap = document.getElementById('quiz-questions-wrap');
+      wrap.innerHTML = subset.map((h, qIdx) => {
+        const chosen = state.hadith.quizAnswers[qIdx];
+        return `
+          <div class="p-4 rounded-xl bg-stone-50 border border-stone-200 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold bg-emerald-800 text-white px-2.5 py-0.5 rounded-full">سؤال ${qIdx + 1}</span>
+              <span class="text-xs font-semibold text-stone-500">${h.ref}</span>
+            </div>
+            <p class="font-bold text-sm sm:text-base text-emerald-950 leading-relaxed">${h.quiz.prompt}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              ${h.quiz.options.map((opt, oIdx) => {
+                const isSelected = chosen === oIdx;
+                return `
+                  <button type="button" data-qidx="${qIdx}" data-oidx="${oIdx}" class="quiz-opt-btn text-right px-3.5 py-2.5 rounded-xl border text-sm font-semibold transition cursor-pointer ${isSelected ? 'bg-emerald-800 text-white border-emerald-800' : 'bg-white text-stone-700 border-stone-200 hover:border-emerald-500'}">
+                    ${opt}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderLeaderboard() {
+      const isMale = state.currentUser.gender === 'male';
+      document.getElementById('leaderboard-division-badge').textContent = isMale ? 'قسم الأولاد فقط' : 'قسم البنات فقط';
+
+      const allInDivision = [
+        ...state.users.filter(u => u.gender === state.currentUser.gender && u.id !== state.currentUser.id),
+        state.currentUser
+      ].sort((a, b) => b.score - a.score);
+
+      const podium = document.getElementById('leaderboard-podium');
+      const medals = ['bg-amber-100 border-amber-300 text-amber-900', 'bg-stone-100 border-stone-300 text-stone-800', 'bg-orange-50 border-orange-200 text-orange-900'];
+      const rankNames = ['المركز الأول 🥇', 'المركز الثاني 🥈', 'المركز الثالث 🥉'];
+
+      podium.innerHTML = allInDivision.slice(0, 3).map((u, idx) => `
+        <div class="rounded-2xl border p-4 ${medals[idx]} ${u.id === state.currentUser.id ? 'ring-2 ring-emerald-700' : ''}">
+          <div class="text-xs font-extrabold mb-1">${rankNames[idx]}</div>
+          <div class="font-extrabold text-base flex items-center justify-between">
+            <span>${u.name} ${u.id === state.currentUser.id ? '(أنت)' : ''}</span>
+            <span class="font-num text-xs opacity-75">#${u.id}</span>
+          </div>
+          <div class="mt-2 flex items-center justify-between text-xs font-bold">
+            <span>${u.dailyDone}/5 تحديات</span>
+            <span class="font-num text-base font-black">${u.score} نقطة</span>
+          </div>
+        </div>
+      `).join('');
+
+      const tbody = document.getElementById('leaderboard-tbody');
+      tbody.innerHTML = allInDivision.map((u, idx) => {
+        const isMe = u.id === state.currentUser.id;
+        return `
+          <tr class="${isMe ? 'bg-emerald-50/90 font-bold' : 'hover:bg-stone-50'}">
+            <td class="py-3 px-3 font-num font-bold text-stone-700">${idx + 1}</td>
+            <td class="py-3 px-3 font-num text-emerald-800 font-semibold">#${u.id}</td>
+            <td class="py-3 px-3 text-stone-900">${u.name} ${isMe ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md mr-1">أنت</span>' : ''}</td>
+            <td class="py-3 px-3 font-num">${u.dailyDone} / 5</td>
+            <td class="py-3 px-3 font-num">${u.hadiths} / 5</td>
+            <td class="py-3 px-3 font-num">${u.streak} يوم</td>
+            <td class="py-3 px-3 font-num font-extrabold text-emerald-800">${u.score}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderNotifications() {
+      const unreadCount = state.notifications.filter(n => n.unread).length;
+      const badge = document.getElementById('notif-badge');
+      badge.textContent = unreadCount;
+      badge.classList.toggle('hidden', unreadCount === 0);
+
+      const list = document.getElementById('notif-list');
+      if (state.notifications.length === 0) {
+        list.innerHTML = '<div class="text-center text-sm text-stone-400 py-10">لا توجد تنبيهات بعد.</div>';
+        return;
+      }
+      list.innerHTML = state.notifications.map(n => `
+        <div class="p-3.5 rounded-xl border ${n.unread ? 'bg-amber-50/70 border-amber-200' : 'bg-stone-50 border-stone-200'}">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <span class="text-xs font-extrabold text-emerald-950">${n.title}</span>
+            <span class="text-[11px] text-stone-400">${n.time}</span>
+          </div>
+          <p class="text-xs text-stone-700 leading-relaxed">${n.body}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderAll() {
+      renderHeader();
+      renderTabs();
+      renderChallenges();
+      renderHadithSection();
+      renderLeaderboard();
+      renderNotifications();
+      updateCountdownBar();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // ===========================
+    // 6. EVENT LISTENERS
+    // ===========================
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.activeTab = btn.dataset.tab;
+        renderAll();
+      });
+    });
+
+    document.getElementById('mode-combined-btn').addEventListener('click', () => {
+      state.challengeMode = 'combined';
+      renderAll();
+    });
+
+    document.getElementById('mode-single-btn').addEventListener('click', () => {
+      state.challengeMode = 'single';
+      renderAll();
+    });
+
+    document.getElementById('single-task-select').addEventListener('change', (e) => {
+      state.singleTaskKey = e.target.value;
+      renderAll();
+    });
+
+    document.getElementById('opponent-select').addEventListener('change', (e) => {
+      state.opponentId = Number(e.target.value);
+      state.opponentPct = Math.floor(Math.random() * 55) + 15;
+      const opp = getCurrentOpponent();
+      if (opp) {
+        addNotification('تم بدء تحدٍ جديد!', `أنت الآن في منافسة مباشرة مع ${opp.name} (#${opp.id}).`);
+      }
+      renderAll();
+    });
+
+    document.getElementById('btn-random-opponent').addEventListener('click', () => {
+      const peers = getSameGenderPeers();
+      if (peers.length === 0) return;
+      const others = peers.filter(p => p.id !== state.opponentId);
+      const pool = others.length > 0 ? others : peers;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      state.opponentId = pick.id;
+      state.opponentPct = Math.floor(Math.random() * 60) + 20;
+      addNotification('مطابقة عشوائية ناجحة!', `تم اختيار ${pick.name} (#${pick.id}) من نفس قسمك كمنافس عشوائي لك اليوم.`);
+      renderAll();
+    });
+
+    document.getElementById('btn-sim-opponent').addEventListener('click', () => {
+      const opp = getCurrentOpponent();
+      state.opponentPct = Math.min(100, state.opponentPct + 14);
+      if (opp) {
+        addNotification('تقدم جديد لمنافسك!', `منافسك ${opp.name} (#${opp.id}) وصل الآن إلى ${state.opponentPct}% من التحدي اليومي. شدّ حيلك!`);
+      }
+      renderAll();
+    });
+
+    document.getElementById('btn-sim-notif').addEventListener('click', () => {
+      state.simHourOffset = (state.simHourOffset + 4) % 24;
+      const { elapsedHours, remHours } = getDayTimeMetrics();
+      addNotification(
+        'تذكير الوقت المتبقي للتحدي ⏰',
+        `عدّى ${elapsedHours} ساعات من اليوم، فاضل لك ${remHours} ساعة فقط لإنهاء أذكارك والتفوق على منافسك!`
+      );
+      updateCountdownBar();
+    });
+
+    // Counters (+1, +10, reset)
+    document.querySelectorAll('.counter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.counter;
+        const step = Number(btn.dataset.step);
+        const max = key === 'istighfar' ? 70 : 100;
+        state.tasks[key] = Math.min(max, state.tasks[key] + step);
+        checkTaskAwards();
+        renderAll();
+      });
+    });
+
+    document.querySelectorAll('.reset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.reset;
+        state.tasks[key] = 0;
+        renderAll();
+      });
+    });
+
+    // Morning & Evening Adhkar checkboxes (delegated)
+    document.getElementById('adhkar-lists-grid').addEventListener('change', (e) => {
+      if (e.target.classList.contains('adhkar-check')) {
+        const type = e.target.dataset.adhkarType;
+        const idx = Number(e.target.dataset.adhkarIdx);
+        state.tasks[type][idx] = e.target.checked;
+        checkTaskAwards();
+        renderAll();
+      }
+    });
+
+    document.querySelectorAll('.complete-all-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.completeAll;
+        const allDone = state.tasks[type].every(Boolean);
+        state.tasks[type] = state.tasks[type].map(() => !allDone);
+        checkTaskAwards();
+        renderAll();
+      });
+    });
+
+    // Hadith Roadmap & Blur Toggle (delegated)
+    document.getElementById('hadith-roadmap').addEventListener('click', (e) => {
+      const btn = e.target.closest('.hadith-step-btn');
+      if (!btn || btn.disabled) return;
+      state.hadith.selectedIndex = Number(btn.dataset.hadithIdx);
+      state.hadith.quizActive = false;
+      state.hadith.blurMode = false;
+      renderAll();
+    });
+
+    document.getElementById('btn-toggle-blur').addEventListener('click', () => {
+      state.hadith.blurMode = !state.hadith.blurMode;
+      renderHadithSection();
+    });
+
+    document.getElementById('study-hadith-text').addEventListener('click', (e) => {
+      if (e.target.classList.contains('blur-word')) {
+        e.target.classList.toggle('revealed');
+      }
+    });
+
+    document.getElementById('btn-start-quiz').addEventListener('click', () => {
+      state.hadith.quizActive = true;
+      state.hadith.quizAnswers = {};
+      document.getElementById('quiz-result-banner').classList.add('hidden');
+      renderHadithSection();
+    });
+
+    document.getElementById('btn-cancel-quiz').addEventListener('click', () => {
+      state.hadith.quizActive = false;
+      renderHadithSection();
+    });
+
+    document.getElementById('quiz-questions-wrap').addEventListener('click', (e) => {
+      const btn = e.target.closest('.quiz-opt-btn');
+      if (!btn) return;
+      const qIdx = Number(btn.dataset.qidx);
+      const oIdx = Number(btn.dataset.oidx);
+      state.hadith.quizAnswers[qIdx] = oIdx;
+      renderCumulativeQuiz();
+    });
+
+    document.getElementById('btn-submit-quiz').addEventListener('click', () => {
+      const count = state.hadith.selectedIndex + 1;
+      const subset = BUKHARI_HADITHS.slice(0, count);
+      const banner = document.getElementById('quiz-result-banner');
+
+      if (Object.keys(state.hadith.quizAnswers).length < subset.length) {
+        banner.className = 'rounded-xl p-4 text-sm font-bold bg-amber-50 border border-amber-300 text-amber-900';
+        banner.textContent = 'من فضلك أجب على جميع الأسئلة التراكمية قبل الاعتماد.';
+        banner.classList.remove('hidden');
+        return;
+      }
+
+      let correct = 0;
+      subset.forEach((h, idx) => {
+        if (state.hadith.quizAnswers[idx] === h.quiz.answerIndex) correct++;
+      });
+
+      const passed = correct === subset.length;
+      if (passed) {
+        banner.className = 'rounded-xl p-4 text-sm font-bold bg-emerald-100 border border-emerald-300 text-emerald-900';
+        const newlyMastered = !state.hadith.mastered.includes(state.hadith.selectedIndex);
+        if (newlyMastered) {
+          state.hadith.mastered.push(state.hadith.selectedIndex);
+          state.currentUser.hadiths = state.hadith.mastered.length;
+          state.currentUser.score += 75;
+          if (state.hadith.unlockedIndex < BUKHARI_HADITHS.length - 1 && state.hadith.selectedIndex === state.hadith.unlockedIndex) {
+            state.hadith.unlockedIndex++;
+          }
+          addNotification(
+            'مبارك! اجتزت الاختبار التراكمي',
+            `أجبت بنجاح على ${correct}/${subset.length} وحصلت على +٧٥ نقطة وتم فتح الحديث التالي في صحيح البخاري!`
+          );
+          fireConfetti();
+        }
+        banner.textContent = `ممتاز! أجبت إجابة صحيحة على ${correct} من ${subset.length}. تم توثيق حفظك وفتح الحديث التالي في المسار!`;
+        banner.classList.remove('hidden');
+        renderHeader();
+        renderLeaderboard();
+        setTimeout(() => {
+          state.hadith.quizActive = false;
+          if (state.hadith.selectedIndex < state.hadith.unlockedIndex) {
+            state.hadith.selectedIndex = state.hadith.unlockedIndex;
+          }
+          renderAll();
+        }, 1600);
+      } else {
+        banner.className = 'rounded-xl p-4 text-sm font-bold bg-rose-50 border border-rose-300 text-rose-900';
+        banner.textContent = `أجبت بشكل صحيح على ${correct} من ${subset.length}. راجع الأحاديث وحاول مرة أخرى لتثبيت الحفظ التراكمي!`;
+        banner.classList.remove('hidden');
+      }
+    });
+
+    // Auth Modal (Sequential ID + Gender Isolation)
+    const authModal = document.getElementById('auth-modal');
+    document.getElementById('btn-open-auth').addEventListener('click', () => {
+      document.getElementById('input-user-name').value = '';
+      document.getElementById('next-id-preview').textContent = `#${state.nextSequentialId}`;
+      authModal.classList.remove('hidden');
+    });
+    document.getElementById('btn-close-auth').addEventListener('click', () => authModal.classList.add('hidden'));
+    authModal.addEventListener('click', (e) => {
+      if (e.target === authModal) authModal.classList.add('hidden');
+    });
+
+    document.getElementById('auth-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById('input-user-name').value.trim();
+      const genderInput = document.querySelector('input[name="gender"]:checked').value;
+      if (!nameInput) return;
+
+      // Save previous user in directory
+      if (!state.users.some(u => u.id === state.currentUser.id)) {
+        state.users.push({ ...state.currentUser });
+      }
+
+      const assignedId = state.nextSequentialId++;
+      state.currentUser = {
+        id: assignedId,
+        name: nameInput,
+        gender: genderInput,
+        score: 0,
+        dailyDone: 0,
+        streak: 1,
+        hadiths: 0
+      };
+
+      // Reset daily progress for new user
+      state.tasks = { subhan: 0, salawat: 0, istighfar: 0, morning: [false, false, false, false], evening: [false, false, false, false] };
+      state.awarded = { subhan: false, salawat: false, istighfar: false, morning: false, evening: false, combinedBonus: false };
+      state.hadith = { unlockedIndex: 0, selectedIndex: 0, mastered: [], blurMode: false, quizActive: false, quizAnswers: {} };
+
+      const peers = getSameGenderPeers();
+      state.opponentId = peers.length > 0 ? peers[0].id : null;
+      state.opponentPct = 35;
+
+      authModal.classList.add('hidden');
+      addNotification(
+        `أهلاً بك يا ${nameInput}!`,
+        `تم تسجيلك برقم تعريفي تسلسلي #${assignedId} في ${genderInput === 'male' ? 'قسم الأولاد' : 'قسم البنات'}.`
+      );
+      renderAll();
+    });
+
+    // Notifications Drawer
+    const notifModal = document.getElementById('notif-modal');
+    document.getElementById('btn-open-notifications').addEventListener('click', () => {
+      notifModal.classList.remove('hidden');
+    });
+    document.getElementById('btn-close-notif').addEventListener('click', () => notifModal.classList.add('hidden'));
+    notifModal.addEventListener('click', (e) => {
+      if (e.target === notifModal) notifModal.classList.add('hidden');
+    });
+    document.getElementById('btn-mark-read').addEventListener('click', () => {
+      state.notifications.forEach(n => { n.unread = false; });
+      renderNotifications();
+    });
+
+    // Initial Boot & Live Clock
+    renderAll();
+    setInterval(updateCountdownBar, 60000);
+  </script>
+  <script>
+// ======================================================
+// v2 LAYER: accounts, persistence, daily rollover, duels,
+// weekly league, reminders. All storage goes through `Store`
+// so it can be swapped for a real backend (Supabase/Firebase).
+// ======================================================
+(function () {
+  const DB_KEY = 'sabiqoon_v2_db';
+  const pad = n => String(n).padStart(2, '0');
+  const isoDay = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const daysBetween = (a, b) => Math.round((Date.parse(b + 'T00:00:00') - Date.parse(a + 'T00:00:00')) / 86400000);
+  const weekStart = () => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 1) % 7)); return isoDay(d); }; // weeks start Saturday
+
+  // ---------- Store (swap this object for a backend later) ----------
+  const Store = {
+    read() { try { return JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch (e) { return null; } },
+    write(db) { try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) {} }
+  };
+  let db = Store.read() || { accounts: {}, session: null, nextId: 1011 };
+  let swReg = null;
+  let lbPeriod = 'day';
+
+  async function hashPin(pin, salt) {
+    try {
+      if (window.crypto && crypto.subtle) {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin));
+        return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+    } catch (e) {}
+    let h = 2166136261; const s = salt + ':' + pin;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return 'f' + (h >>> 0).toString(16);
+  }
+
+  // ---------- opponent model ----------
+  const paceOf = u => 0.55 + ((u.id * 37) % 40) / 100;      // final % an opponent reaches by day end
+  function tickOpponent() {
+    const opp = getCurrentOpponent(); if (!opp) return;
+    const { elapsedHours, elapsedMins } = getDayTimeMetrics();
+    const frac = Math.min(1, (elapsedHours * 60 + elapsedMins) / 1440);
+    const before = state.opponentPct;
+    state.opponentPct = Math.min(100, Math.round(paceOf(opp) * 100 * Math.pow(frac, 0.8)));
+    const mine = calculateUserProgressPct();
+    state.meta.lastOppAhead = state.meta.lastOppAhead || false;
+    const ahead = state.opponentPct > mine && state.opponentPct > 0;
+    if (state._ready && ahead && !state.meta.lastOppAhead && before !== undefined && mine > 0) {
+      addNotification('منافسك تخطّاك! 🏃', `${opp.name} وصل ${state.opponentPct}% وأنت ${mine}%. كمّل وردك!`);
+    }
+    state.meta.lastOppAhead = ahead;
+  }
+
+  // ---------- account data ----------
+  function freshData(profile) {
+    return {
+      tasks: { subhan: 0, salawat: 0, istighfar: 0, morning: [false, false, false, false], evening: [false, false, false, false] },
+      awarded: { subhan: false, salawat: false, istighfar: false, morning: false, evening: false, combinedBonus: false },
+      hadith: { unlockedIndex: 0, selectedIndex: 0, mastered: [] },
+      notifications: [{ id: 1, title: `أهلاً بك يا ${profile.name}!`, body: `رقمك التعريفي #${profile.id}. ابدأ تحديك اليوم وتنافس مع ${profile.gender === 'male' ? 'الأولاد' : 'البنات'} في قسمك.`, time: 'الآن', unread: true }],
+      challengeMode: 'combined', singleTaskKey: 'subhan', opponentId: null,
+      meta: { lastDay: isoDay(), dayStartScore: 0, weekKey: weekStart(), weekStartScore: 0, streakDay: null, history: [], fired: {}, lastOppAhead: false,
+              settings: { device: false, morning: true, morningAt: '05:30', evening: true, eveningAt: '16:30', closing: true, closingAt: '21:30' } }
+    };
+  }
+  function syncUsers() {
+    const others = Object.values(db.accounts).filter(a => a.profile.id !== state.currentUser.id).map(a => ({ ...a.profile, local: true }));
+    state.users = [...INITIAL_USERS, ...others];
+  }
+  function save() {
+    if (!state._ready) return;
+    const acc = db.accounts[state.currentUser.id]; if (!acc) return;
+    acc.profile = state.currentUser;
+    acc.data = {
+      tasks: state.tasks, awarded: state.awarded,
+      hadith: { unlockedIndex: state.hadith.unlockedIndex, selectedIndex: state.hadith.selectedIndex, mastered: state.hadith.mastered },
+      notifications: state.notifications.slice(0, 40), challengeMode: state.challengeMode, singleTaskKey: state.singleTaskKey,
+      opponentId: state.opponentId, meta: state.meta
+    };
+    Store.write(db);
+  }
+  function enter(id) {
+    const acc = db.accounts[id];
+    state.currentUser = acc.profile;
+    const d = acc.data || freshData(acc.profile);
+    state.tasks = d.tasks; state.awarded = d.awarded;
+    state.hadith = { ...d.hadith, blurMode: false, quizActive: false, quizAnswers: {} };
+    state.notifications = d.notifications; state.challengeMode = d.challengeMode; state.singleTaskKey = d.singleTaskKey;
+    state.opponentId = d.opponentId; state.meta = d.meta;
+    state.meta.settings = Object.assign({ device: false, morning: true, morningAt: '05:30', evening: true, eveningAt: '16:30', closing: true, closingAt: '21:30' }, state.meta.settings);
+    state.nextSequentialId = db.nextId;
+    db.session = id;
+    syncUsers();
+    state._ready = true;
+    rollover();
+    const peers = getSameGenderPeers();
+    if (!peers.find(p => p.id === state.opponentId) && peers.length) state.opponentId = peers[0].id;
+    document.getElementById('gate').classList.add('hidden');
+    state.activeTab = 'challenges';
+    renderAll();
+  }
+
+  // ---------- daily rollover: settle duel, reset day ----------
+  function rollover() {
+    const m = state.meta, today = isoDay();
+    if (m.streakDay && daysBetween(m.streakDay, today) > 1 && state.currentUser.streak) state.currentUser.streak = 0;
+    if (m.lastDay === today) return;
+    const opp = getCurrentOpponent();
+    const myPct = calculateUserProgressPct();
+    if (opp && (myPct > 0 || state.tasks.subhan + state.tasks.salawat + state.tasks.istighfar > 0)) {
+      const oppFinal = Math.round(paceOf(opp) * 100);
+      const res = myPct > oppFinal ? 'win' : myPct < oppFinal ? 'loss' : 'draw';
+      m.history.unshift({ day: m.lastDay, opp: opp.name, my: myPct, oppPct: oppFinal, res });
+      m.history = m.history.slice(0, 30);
+      if (res === 'win') state.currentUser.score += 30;
+      const t = { win: 'فزت في تحدي أمس! 🏆', loss: 'خسرت تحدي أمس، والليلة فرصة جديدة', draw: 'تعادلت في تحدي أمس' }[res];
+      addNotification(t, `أنت ${myPct}% مقابل ${opp.name} ${oppFinal}%.${res === 'win' ? ' +30 نقطة مكافأة.' : ''}`, false);
+    }
+    state.tasks = { subhan: 0, salawat: 0, istighfar: 0, morning: [false, false, false, false], evening: [false, false, false, false] };
+    state.awarded = { subhan: false, salawat: false, istighfar: false, morning: false, evening: false, combinedBonus: false };
+    state.currentUser.dailyDone = 0;
+    m.lastDay = today; m.fired = {}; m.lastOppAhead = false;
+    m.dayStartScore = state.currentUser.score;
+    if (m.weekKey !== weekStart()) { m.weekKey = weekStart(); m.weekStartScore = state.currentUser.score; }
+  }
+
+  // streak: first completed task of the day counts
+  const _checkTaskAwards = checkTaskAwards;
+  window.checkTaskAwards = function () {
+    _checkTaskAwards();
+    const m = state.meta, today = isoDay();
+    if (state.currentUser.dailyDone >= 1 && m.streakDay !== today) {
+      state.currentUser.streak = (m.streakDay && daysBetween(m.streakDay, today) === 1) ? (state.currentUser.streak || 0) + 1 : 1;
+      m.streakDay = today;
+    }
+  };
+
+  // ---------- notifications ----------
+  const _addNotification = addNotification;
+  function deviceNotify(title, body) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+      if (swReg && swReg.showNotification) swReg.showNotification(title, { body, icon: 'icon.svg', dir: 'rtl', lang: 'ar', tag: 'sabiqoon' });
+      else new Notification(title, { body, dir: 'rtl', lang: 'ar' });
+    } catch (e) {}
+  }
+  window.addNotification = function (title, body, showToast = true) {
+    _addNotification(title, body, showToast);
+    if (document.hidden && state.meta && state.meta.settings.device) deviceNotify(title, body);
+  };
+  function runReminders() {
+    if (!state._ready) return;
+    const s = state.meta.settings, now = new Date(), cur = now.getHours() * 60 + now.getMinutes();
+    const list = [
+      ['morning', s.morning, s.morningAt, 'وقت أذكار الصباح ☀️', 'ابدأ يومك بأذكار الصباح، وهي ٤٠ نقطة في انتظارك.'],
+      ['evening', s.evening, s.eveningAt, 'وقت أذكار المساء 🌙', 'لا تنسَ أذكار المساء، وكمّل وردك قبل منافسك.'],
+      ['closing', s.closing, s.closingAt, 'باقي قليل على نهاية التحدي ⏰', 'حدّد ما تبقى من وردك اليوم قبل منتصف الليل.']
+    ];
+    list.forEach(([key, on, at, title, body]) => {
+      if (!on || state.meta.fired[key]) return;
+      const [h, mi] = at.split(':').map(Number), t = h * 60 + mi;
+      if (cur >= t && cur - t <= 180) {
+        state.meta.fired[key] = true;
+        if (key === 'morning' && getTaskProgress('morning') >= 1) return;
+        if (key === 'evening' && getTaskProgress('evening') >= 1) return;
+        if (key === 'closing' && state.currentUser.dailyDone >= 5) return;
+        addNotification(title, body);
+        deviceNotify(title, body);
+      }
+    });
+    if (isoDay() !== state.meta.lastDay) { rollover(); renderAll(); }
+  }
+  function renderSettings() {
+    const s = state.meta.settings, perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+    const permTxt = perm === 'granted' ? 'مفعّلة على هذا الجهاز ✓' : perm === 'denied' ? 'محظورة من إعدادات المتصفح' : perm === 'unsupported' ? 'غير مدعومة في هذا المتصفح' : 'غير مفعّلة';
+    const row = (k, label, at) => `<label class="flex items-center justify-between gap-2"><span class="flex items-center gap-2"><input type="checkbox" data-set="${k}" ${s[k] ? 'checked' : ''} class="w-4 h-4 accent-emerald-700"/> ${label}</span><input type="time" data-time="${at}" value="${s[at]}" class="font-num text-xs border border-stone-300 rounded-lg px-2 py-1 bg-white"/></label>`;
+    document.getElementById('notif-settings').innerHTML = `
+      <div class="font-extrabold text-emerald-950 text-sm">إعدادات التذكير</div>
+      <div class="flex items-center justify-between gap-2 text-xs"><span>إشعارات الجهاز: <b>${permTxt}</b></span>
+        <button id="btn-enable-device" type="button" class="bg-emerald-800 text-white font-bold px-3 py-1.5 rounded-lg cursor-pointer ${perm === 'granted' || perm === 'unsupported' ? 'hidden' : ''}">تفعيل</button>
+        <button id="btn-test-device" type="button" class="bg-amber-500 text-emerald-950 font-bold px-3 py-1.5 rounded-lg cursor-pointer ${perm === 'granted' ? '' : 'hidden'}">جرّب إشعاراً</button></div>
+      <div class="space-y-2 text-xs">${row('morning', 'تذكير أذكار الصباح', 'morningAt')}${row('evening', 'تذكير أذكار المساء', 'eveningAt')}${row('closing', 'تنبيه قبل نهاية اليوم', 'closingAt')}</div>
+      <p class="text-[11px] leading-relaxed text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">التذكيرات تعمل الآن والموقع أو التطبيق مفتوح في الخلفية. الإشعار وأنت مغلق الموقع تماماً يحتاج خدمة Push على سيرفر (مشروحة في ملف التوصية).</p>`;
+  }
+  document.getElementById('notif-settings') || 0;
+
+  // ---------- summary card ----------
+  const TASK_LABELS = { subhan: 'سبحان الله', salawat: 'الصلاة على النبي ﷺ', istighfar: 'الاستغفار', morning: 'أذكار الصباح', evening: 'أذكار المساء' };
+  function badgesFor(u, m) {
+    const wins = m.history.filter(h => h.res === 'win').length;
+    return [
+      [u.streak >= 3, '🔥 مثابر', '٣ أيام متتالية'], [u.streak >= 7, '🌟 ثابت', '٧ أيام متتالية'],
+      [u.dailyDone >= 5, '✅ يوم كامل', 'أتممت كل أوراد اليوم'], [u.hadiths >= 1, '📖 حافظ', 'أول حديث متقن'],
+      [u.hadiths >= 5, '🎓 متقن', 'كل الأحاديث'], [wins >= 1, '🏆 فائز', 'فزت في تحدٍّ'], [wins >= 5, '👑 بطل', '٥ انتصارات']
+    ];
+  }
+  function renderSummary() {
+    if (!state._ready) return;
+    const u = state.currentUser, m = state.meta, pct = calculateUserProgressPct(), opp = getCurrentOpponent();
+    document.getElementById('sum-ring').style.strokeDashoffset = 263.9 * (1 - pct / 100);
+    document.getElementById('sum-pct').textContent = pct + '%';
+    document.getElementById('sum-streak').textContent = `${u.streak || 0} يوم متتالي`;
+    const w = m.history.filter(h => h.res === 'win').length, l = m.history.filter(h => h.res === 'loss').length;
+    document.getElementById('sum-record').textContent = `${w} فوز · ${l} خسارة`;
+    let duel = 'اختر منافساً لتبدأ التحدي.';
+    if (opp) {
+      const diff = pct - state.opponentPct, proj = Math.round(paceOf(opp) * 100);
+      duel = diff > 0 ? `متقدّم بـ ${diff}% على ${opp.name}` : diff < 0 ? `متأخر بـ ${-diff}% عن ${opp.name}` : `تعادل مع ${opp.name} حالياً`;
+      duel += ` · المتوقع أن ينهي اليوم عند ~${proj}% (تُحسم النتيجة منتصف الليل)`;
+    }
+    document.getElementById('sum-duel').textContent = duel;
+    const next = ['subhan', 'salawat', 'istighfar', 'morning', 'evening'].find(k => getTaskProgress(k) < 1);
+    document.getElementById('sum-next').textContent = next ? `الخطوة التالية المقترحة: ${TASK_LABELS[next]}` : 'أتممت كل أوراد اليوم، بارك الله فيك! 🎉';
+    document.getElementById('sum-badges').innerHTML = badgesFor(u, m).map(([on, t, d]) =>
+      `<span title="${d}" class="text-[11px] font-bold px-2.5 py-1 rounded-full border ${on ? 'bg-amber-100 border-amber-300 text-amber-900' : 'bg-stone-50 border-stone-200 text-stone-400 grayscale opacity-70'}">${t}</span>`).join('');
+  }
+
+  // ---------- leaderboard with periods ----------
+  window.renderLeaderboard = function () {
+    if (!state._ready) return;
+    const u0 = state.currentUser, m = state.meta;
+    const isMale = u0.gender === 'male';
+    document.getElementById('leaderboard-division-badge').textContent = isMale ? 'قسم الأولاد فقط' : 'قسم البنات فقط';
+    document.querySelectorAll('.lb-period').forEach(b => {
+      const on = b.dataset.period === lbPeriod;
+      b.className = 'lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer ' + (on ? 'bg-emerald-800 text-white' : 'text-stone-600');
+    });
+    const metric = u => {
+      if (u.id === u0.id) return lbPeriod === 'day' ? u.score - m.dayStartScore : lbPeriod === 'week' ? u.score - m.weekStartScore : u.score;
+      if (u.local) return lbPeriod === 'all' ? u.score : Math.round(u.score * 0.3);
+      return lbPeriod === 'day' ? u.dailyDone * 40 + (u.id % 5) * 3 : lbPeriod === 'week' ? Math.round(u.score * 0.4 + (u.id % 7) * 5) : u.score;
+    };
+    const rows = state.users.filter(u => u.gender === u0.gender && u.id !== u0.id).concat([u0]).map(u => ({ u, v: metric(u) })).sort((a, b) => b.v - a.v);
+    const medals = ['bg-amber-100 border-amber-300 text-amber-900', 'bg-stone-100 border-stone-300 text-stone-800', 'bg-orange-50 border-orange-200 text-orange-900'];
+    const names = ['المركز الأول 🥇', 'المركز الثاني 🥈', 'المركز الثالث 🥉'];
+    const unit = lbPeriod === 'day' ? 'نقطة اليوم' : lbPeriod === 'week' ? 'نقطة الأسبوع' : 'نقطة';
+    document.getElementById('leaderboard-podium').innerHTML = rows.slice(0, 3).map(({ u, v }, i) => `
+      <div class="rounded-2xl border p-4 ${medals[i]} ${u.id === u0.id ? 'ring-2 ring-emerald-700' : ''}">
+        <div class="text-xs font-extrabold mb-1">${names[i]}</div>
+        <div class="font-extrabold text-base flex items-center justify-between"><span>${u.name} ${u.id === u0.id ? '(أنت)' : ''}</span><span class="font-num text-xs opacity-75">#${u.id}</span></div>
+        <div class="mt-2 flex items-center justify-between text-xs font-bold"><span>${u.dailyDone}/5 تحديات</span><span class="font-num text-base font-black">${v} ${unit}</span></div>
+      </div>`).join('');
+    document.getElementById('leaderboard-tbody').innerHTML = rows.map(({ u, v }, i) => {
+      const me = u.id === u0.id;
+      return `<tr class="${me ? 'bg-emerald-50/90 font-bold' : 'hover:bg-stone-50'}">
+        <td class="py-3 px-3 font-num font-bold text-stone-700">${i + 1}</td>
+        <td class="py-3 px-3 font-num text-emerald-800 font-semibold">#${u.id}</td>
+        <td class="py-3 px-3 text-stone-900">${u.name} ${me ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md mr-1">أنت</span>' : ''}</td>
+        <td class="py-3 px-3 font-num">${u.dailyDone} / 5</td><td class="py-3 px-3 font-num">${u.hadiths} / 5</td>
+        <td class="py-3 px-3 font-num">${u.streak} يوم</td><td class="py-3 px-3 font-num font-extrabold text-emerald-800">${v}</td></tr>`;
+    }).join('');
+  };
+
+  // ---------- renderAll wrapper ----------
+  const _renderAll = renderAll;
+  window.renderAll = function () {
+    if (!state._ready) return;
+    syncUsers();
+    tickOpponent();
+    _renderAll();
+    renderSummary();
+    renderSettings();
+    if (window.lucide) lucide.createIcons();
+    save();
+  };
+
+  // ---------- wiring ----------
+  const $ = id => document.getElementById(id);
+  // replace old auth button (drops old listeners)
+  const oldAuth = $('btn-open-auth'); const newAuth = oldAuth.cloneNode(true); oldAuth.replaceWith(newAuth);
+  newAuth.addEventListener('click', () => {
+    const u = state.currentUser;
+    $('acct-info').innerHTML = `<div>الاسم: <b>${u.name}</b></div><div>الرقم التعريفي: <b class="font-num">#${u.id}</b></div><div>القسم: <b>${u.gender === 'male' ? 'الأولاد' : 'البنات'}</b></div><div>النقاط: <b class="font-num">${u.score}</b></div>`;
+    $('acct-menu').classList.remove('hidden'); if (window.lucide) lucide.createIcons();
+  });
+  $('acct-close').addEventListener('click', () => $('acct-menu').classList.add('hidden'));
+  $('acct-logout').addEventListener('click', () => { save(); state._ready = false; db.session = null; Store.write(db); location.reload(); });
+  $('acct-delete').addEventListener('click', () => {
+    if (!confirm('حذف الحساب وكل بياناته من هذا الجهاز؟')) return;
+    delete db.accounts[state.currentUser.id]; db.session = null; state._ready = false; Store.write(db); location.reload();
+  });
+  $('btn-sim-opponent').classList.add('hidden');
+  $('btn-sim-notif').textContent = 'جرّب تقدّم الوقت (تجربة)';
+
+  // gate tabs
+  function gateTab(t) {
+    $('gate-login').classList.toggle('hidden', t !== 'login'); $('gate-reg').classList.toggle('hidden', t !== 'reg');
+    $('gate-tab-login').className = 'py-2 rounded-lg text-sm font-bold cursor-pointer ' + (t === 'login' ? 'bg-emerald-800 text-white' : 'text-stone-600');
+    $('gate-tab-reg').className = 'py-2 rounded-lg text-sm font-bold cursor-pointer ' + (t === 'reg' ? 'bg-emerald-800 text-white' : 'text-stone-600');
+    $('reg-next-id').textContent = '#' + db.nextId;
+  }
+  $('gate-tab-login').addEventListener('click', () => gateTab('login'));
+  $('gate-tab-reg').addEventListener('click', () => gateTab('reg'));
+  const showErr = (id, msg) => { const e = $(id); e.textContent = msg; e.classList.remove('hidden'); };
+  $('gate-login').addEventListener('submit', async e => {
+    e.preventDefault();
+    const acc = db.accounts[Number($('login-id').value.trim())];
+    if (!acc || acc.pinHash !== await hashPin($('login-pin').value, acc.salt)) return showErr('login-err', 'الرقم التعريفي أو الرمز السري غير صحيح.');
+    enter(acc.profile.id);
+  });
+  $('gate-reg').addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = $('reg-name').value.trim(), pin = $('reg-pin').value.trim();
+    if (!/^[0-9]{4,12}$/.test(pin)) return showErr('reg-err', 'الرمز السري يجب أن يكون أرقاماً فقط (٤ إلى ١٢).');
+    const gender = document.querySelector('input[name="reg-gender"]:checked').value;
+    const id = db.nextId++, salt = Math.random().toString(36).slice(2);
+    const profile = { id, name, gender, score: 0, dailyDone: 0, streak: 0, hadiths: 0 };
+    db.accounts[id] = { profile, salt, pinHash: await hashPin(pin, salt), data: freshData(profile) };
+    Store.write(db); enter(id);
+  });
+
+  // friend challenge
+  $('friend-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const id = Number($('friend-id').value.trim()), f = state.users.find(u => u.id === id);
+    if (!f) return triggerToast('لم نجد هذا الرقم', 'تأكد من الرقم التعريفي لصديقك.');
+    if (f.gender !== state.currentUser.gender) return triggerToast('المنافسة داخل نفس القسم فقط', 'أولاد مع أولاد وبنات مع بنات.');
+    state.opponentId = f.id; state.meta.lastOppAhead = false; $('friend-id').value = '';
+    addNotification('بدأ التحدي! ⚔️', `أنت الآن في تحدٍّ مع ${f.name} (#${f.id}). النتيجة تُحسم منتصف الليل.`);
+    renderAll();
+  });
+
+  // leaderboard periods
+  document.querySelectorAll('.lb-period').forEach(b => b.addEventListener('click', () => { lbPeriod = b.dataset.period; renderLeaderboard(); }));
+
+  // notification settings (delegated)
+  $('notif-settings').addEventListener('click', async e => {
+    if (e.target.id === 'btn-enable-device') {
+      try { const p = await Notification.requestPermission(); state.meta.settings.device = p === 'granted'; } catch (err) {}
+      renderAll();
+    }
+    if (e.target.id === 'btn-test-device') deviceNotify('سابقون', 'تمام! الإشعارات شغالة على جهازك ✅');
+  });
+  $('notif-settings').addEventListener('change', e => {
+    const s = state.meta.settings;
+    if (e.target.dataset.set) s[e.target.dataset.set] = e.target.checked;
+    if (e.target.dataset.time) s[e.target.dataset.time] = e.target.value;
+    state.meta.fired = {}; save();
+  });
+
+  // tap feedback
+  $('counters-grid').addEventListener('click', e => {
+    if (!e.target.closest('.counter-btn')) return;
+    if (navigator.vibrate) navigator.vibrate(12);
+    const k = e.target.closest('.counter-btn').dataset.counter, el = $('count-' + k);
+    el.animate([{ transform: 'scale(1.35)' }, { transform: 'scale(1)' }], { duration: 220 });
+  });
+
+  // service worker (works when served over https, e.g. GitHub Pages)
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').then(r => { swReg = r; }).catch(() => {});
+  }
+
+  // boot
+  gateTab('login');
+  state._ready = false;
+  if (db.session && db.accounts[db.session]) enter(db.session); else $('gate').classList.remove('hidden');
+  setInterval(runReminders, 30000);
+  setTimeout(runReminders, 1500);
+  setInterval(() => { if (state._ready) { updateCountdownBar(); tickOpponent(); renderSummary(); } }, 60000);
+  window.addEventListener('beforeunload', save);
+  window.__sabiqoon = { db: () => db, state };
+})();
+
+  </script>
+</body>
+  </html>
