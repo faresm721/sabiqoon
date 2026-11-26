@@ -218,6 +218,7 @@
                 <option value="salawat">الصلاة على النبي ﷺ (١٠٠ مرة)</option>
                 <option value="istighfar">الاستغفار (٧٠ مرة)</option>
                 <option value="hawqala">لا حول ولا قوة إلا بالله (١٠٠ مرة)</option>
+                <option value="rida">رضيت بالله ربا (٣ مرات)</option>
                 <option value="morning">أذكار الصباح</option>
                 <option value="evening">أذكار المساء</option>
               </select>
@@ -417,6 +418,35 @@
                 قل: لا حول ولا قوة إلا بالله (+1)
               </button>
               <button data-reset="hawqala" type="button" class="reset-btn p-2.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-xl transition cursor-pointer" title="إعادة ضبط">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rida 3 -->
+        <div id="card-rida" class="task-card bg-white rounded-2xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between gap-4">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-violet-50 text-violet-800 border border-violet-200">ورد الرضا</span>
+              <span id="status-rida" class="text-xs font-bold text-stone-400">قيد التنفيذ</span>
+            </div>
+            <h3 class="font-hadith text-xl font-bold text-emerald-950">رَضِيتُ بِاللَّهِ رَبًّا وَبِالْإِسْلَامِ دِينًا وَبِمُحَمَّدٍ ﷺ نَبِيًّا وَرَسُولًا</h3>
+            <p class="text-xs text-stone-500 mt-1">الهدف اليومي: ٣ مرات • +٣٠ نقطة عند الإتمام</p>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-end justify-between">
+              <span id="count-rida" class="font-num text-3xl font-extrabold text-violet-700">0</span>
+              <span class="font-num text-sm font-semibold text-stone-400">/ 3</span>
+            </div>
+            <div class="h-2.5 bg-stone-100 rounded-full overflow-hidden">
+              <div id="bar-rida" class="h-full bg-violet-600 rounded-full transition-all duration-200" style="width: 0%"></div>
+            </div>
+            <div class="flex items-center gap-2 pt-2">
+              <button data-counter="rida" data-step="1" type="button" class="counter-btn tap-btn flex-1 bg-violet-700 hover:bg-violet-800 text-white font-bold py-2.5 rounded-xl transition cursor-pointer">
+                قل: رضيت بالله ربا (+1)
+              </button>
+              <button data-reset="rida" type="button" class="reset-btn p-2.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-xl transition cursor-pointer" title="إعادة ضبط">
                 <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
               </button>
             </div>
@@ -712,14 +742,14 @@
     // 1. VERIFIED STATIC DATASETS
     // ===========================
     const MORNING_ADHKAR = [
-      { id: 'm1', text: 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ', repeat: 'مرة واحدة' },
+      { id: 'm1', text: 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ', repeat: 'مرة واحدة' },
       { id: 'm2', text: 'اللَّهُمَّ بِكَ أَصْبَحْنَا، وَبِكَ أَمْسَيْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ النُّشُورُ', repeat: 'مرة واحدة' },
       { id: 'm3', text: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ', repeat: '٣ مرات' },
-      { id: 'm4', text: 'سَيِّدُ الاسْتِغْفَارِ: اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ...', repeat: 'مرة واحدة' }
+      { id: 'm4', text: 'سَيِّدُ الاسْتِغْفَارِ: اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ لَكَ بِذَنْبِي فَاغْفِرْ لِي، فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ', repeat: 'مرة واحدة' }
     ];
 
     const EVENING_ADHKAR = [
-      { id: 'e1', text: 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ', repeat: 'مرة واحدة' },
+      { id: 'e1', text: 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ', repeat: 'مرة واحدة' },
       { id: 'e2', text: 'اللَّهُمَّ بِكَ أَمْسَيْنَا، وَبِكَ أَصْبَحْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ الْمَصِيرُ', repeat: 'مرة واحدة' },
       { id: 'e3', text: 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ', repeat: '٣ مرات' },
       { id: 'e4', text: 'رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ ﷺ نَبِيًّا', repeat: '٣ مرات' }
@@ -830,14 +860,14 @@
       tasks: {
         subhan: 0,
         salawat: 0,
-        istighfar: 0, hawqala: 0,
+        istighfar: 0, hawqala: 0, rida: 0,
         morning: [false, false, false, false],
         evening: [false, false, false, false]
       },
       awarded: {
         subhan: false,
         salawat: false,
-        istighfar: false, hawqala: false,
+        istighfar: false, hawqala: false, rida: false,
         morning: false,
         evening: false,
         combinedBonus: false
@@ -951,6 +981,7 @@
       if (key === 'salawat') return Math.min(1, state.tasks.salawat / 100);
       if (key === 'istighfar') return Math.min(1, state.tasks.istighfar / 70);
       if (key === 'hawqala') return Math.min(1, (state.tasks.hawqala || 0) / 100);
+      if (key === 'rida') return Math.min(1, (state.tasks.rida || 0) / 3);
       if (key === 'morning') return state.tasks.morning.filter(Boolean).length / MORNING_ADHKAR.length;
       if (key === 'evening') return state.tasks.evening.filter(Boolean).length / EVENING_ADHKAR.length;
       return 0;
@@ -960,18 +991,19 @@
       if (state.challengeMode === 'single') {
         return Math.round(getTaskProgress(state.singleTaskKey) * 100);
       }
-      const keys = ['subhan', 'salawat', 'istighfar', 'hawqala', 'morning', 'evening'];
+      const keys = ['subhan', 'salawat', 'istighfar', 'hawqala', 'rida', 'morning', 'evening'];
       const avg = keys.reduce((sum, k) => sum + getTaskProgress(k), 0) / keys.length;
       return Math.round(avg * 100);
     }
 
     function checkTaskAwards() {
-      const pointsMap = { subhan: 50, salawat: 50, istighfar: 40, hawqala: 40, morning: 40, evening: 40 };
+      const pointsMap = { subhan: 50, salawat: 50, istighfar: 40, hawqala: 40, rida: 30, morning: 40, evening: 40 };
       const labelsMap = {
         subhan: 'سبحان الله (١٠٠ مرة)',
         salawat: 'الصلاة على النبي ﷺ (١٠٠ مرة)',
         istighfar: 'الاستغفار (٧٠ مرة)',
         hawqala: 'لا حول ولا قوة إلا بالله (١٠٠ مرة)',
+        rida: 'رضيت بالله ربا (٣ مرات)',
         morning: 'أذكار الصباح',
         evening: 'أذكار المساء'
       };
@@ -990,7 +1022,7 @@
 
       state.currentUser.dailyDone = completedCount;
 
-      if (completedCount === 6 && !state.awarded.combinedBonus) {
+      if (completedCount === 7 && !state.awarded.combinedBonus) {
         state.awarded.combinedBonus = true;
         state.currentUser.score += 100;
         addNotification('إنجاز اليوم الكامل!', 'أتممت التحدي المجمّع بالكامل وحصلت على مكافأة إضافية +١٠٠ نقطة!');
@@ -1070,7 +1102,7 @@
       }
 
       // Show/Hide cards depending on Combined vs Single mode
-      const allCardKeys = ['subhan', 'salawat', 'istighfar', 'hawqala', 'morning', 'evening'];
+      const allCardKeys = ['subhan', 'salawat', 'istighfar', 'hawqala', 'rida', 'morning', 'evening'];
       allCardKeys.forEach(k => {
         const card = document.getElementById(`card-${k}`);
         const visible = isCombined || state.singleTaskKey === k;
@@ -1078,7 +1110,7 @@
       });
 
       // Counters UI
-      const targets = { subhan: 100, salawat: 100, istighfar: 70, hawqala: 100 };
+      const targets = { subhan: 100, salawat: 100, istighfar: 70, hawqala: 100, rida: 3 };
       Object.keys(targets).forEach(k => {
         const val = state.tasks[k];
         const max = targets[k];
@@ -1232,7 +1264,7 @@
             <span class="font-num text-xs opacity-75">#${u.id}</span>
           </div>
           <div class="mt-2 flex items-center justify-between text-xs font-bold">
-            <span>${u.dailyDone == null ? '' : u.dailyDone + '/6 تحديات'}</span>
+            <span>${u.dailyDone == null ? '' : u.dailyDone + '/7 تحديات'}</span>
             <span class="font-num text-base font-black">${u.score} نقطة</span>
           </div>
         </div>
@@ -1361,7 +1393,7 @@
         const nowT = Date.now(); (window.__taps = (window.__taps || []).filter(x => nowT - x < 2000)).push(nowT);
         if (window.__taps.length >= 9 && nowT - (window.__tapWarn || 0) > 12000) { window.__tapWarn = nowT; triggerToast('تمهّل واقرأ بتمعّن 🌿', 'الذكر بحضور القلب أحبّ إلى الله من السرعة.'); }
         const step = 1;
-        const max = key === 'istighfar' ? 70 : 100;
+        const max = key === 'istighfar' ? 70 : (key === 'rida' ? 3 : 100);
         if (state.tasks[key] >= max) { return; }
         state.tasks[key] = Math.min(max, state.tasks[key] + step);
         checkTaskAwards();
@@ -1527,8 +1559,8 @@
       };
 
       // Reset daily progress for new user
-      state.tasks = { subhan: 0, salawat: 0, istighfar: 0, hawqala: 0, morning: [false, false, false, false], evening: [false, false, false, false] };
-      state.awarded = { subhan: false, salawat: false, istighfar: false, hawqala: false, morning: false, evening: false, combinedBonus: false };
+      state.tasks = { subhan: 0, salawat: 0, istighfar: 0, hawqala: 0, rida: 0, morning: [false, false, false, false], evening: [false, false, false, false] };
+      state.awarded = { subhan: false, salawat: false, istighfar: false, hawqala: false, rida: false, morning: false, evening: false, combinedBonus: false };
       state.hadith = { unlockedIndex: 0, selectedIndex: 0, mastered: [], blurMode: false, quizActive: false, quizAnswers: {} };
 
       const peers = getSameGenderPeers();
@@ -1650,7 +1682,7 @@
     pushBusy = true;
     try {
       const t = state.tasks;
-      const { error } = await sb.rpc('submit_progress', { p_subhan: t.subhan, p_salawat: t.salawat, p_istighfar: t.istighfar, p_hawqala: t.hawqala || 0, p_morning: t.morning, p_evening: t.evening });
+      const { error } = await sb.rpc('submit_progress', { p_subhan: t.subhan, p_salawat: t.salawat, p_istighfar: t.istighfar, p_hawqala: t.hawqala || 0, p_rida: t.rida || 0, p_morning: t.morning, p_evening: t.evening });
       if (error) { if (/too fast/.test(error.message)) schedulePush(4000); }
       else { await refreshMe(); refreshLb().then(() => { if (state.activeTab === 'leaderboard') renderLeaderboard(); }); }
     } catch (e) {}
@@ -1661,13 +1693,13 @@
     const { data, error } = await sb.from('daily_progress').select('*').eq('day', cairo);
     const r = data && data[0];
     if (r) {
-      state.tasks = { subhan: r.subhan, salawat: r.salawat, istighfar: r.istighfar, hawqala: r.hawqala || 0, morning: r.morning, evening: r.evening };
-      state.awarded = { subhan: r.subhan >= 100, salawat: r.salawat >= 100, istighfar: r.istighfar >= 70, hawqala: (r.hawqala || 0) >= 100, morning: r.morning.every(Boolean), evening: r.evening.every(Boolean), combinedBonus: false };
-      state.awarded.combinedBonus = ['subhan', 'salawat', 'istighfar', 'hawqala', 'morning', 'evening'].every(k => state.awarded[k]);
+      state.tasks = { subhan: r.subhan, salawat: r.salawat, istighfar: r.istighfar, hawqala: r.hawqala || 0, rida: r.rida || 0, morning: r.morning, evening: r.evening };
+      state.awarded = { subhan: r.subhan >= 100, salawat: r.salawat >= 100, istighfar: r.istighfar >= 70, hawqala: (r.hawqala || 0) >= 100, rida: (r.rida || 0) >= 3, morning: r.morning.every(Boolean), evening: r.evening.every(Boolean), combinedBonus: false };
+      state.awarded.combinedBonus = ['subhan', 'salawat', 'istighfar', 'hawqala', 'rida', 'morning', 'evening'].every(k => state.awarded[k]);
       return true;
     }
-    state.tasks = { subhan: 0, salawat: 0, istighfar: 0, hawqala: 0, morning: [false, false, false, false], evening: [false, false, false, false] };
-    state.awarded = { subhan: false, salawat: false, istighfar: false, hawqala: false, morning: false, evening: false, combinedBonus: false };
+    state.tasks = { subhan: 0, salawat: 0, istighfar: 0, hawqala: 0, rida: 0, morning: [false, false, false, false], evening: [false, false, false, false] };
+    state.awarded = { subhan: false, salawat: false, istighfar: false, hawqala: false, rida: false, morning: false, evening: false, combinedBonus: false };
     return true;
   }
   function tickOpponent() {}
@@ -1722,8 +1754,8 @@
   // ---------- account data ----------
   function freshData(profile) {
     return {
-      tasks: { subhan: 0, salawat: 0, istighfar: 0, hawqala: 0, morning: [false, false, false, false], evening: [false, false, false, false] },
-      awarded: { subhan: false, salawat: false, istighfar: false, hawqala: false, morning: false, evening: false, combinedBonus: false },
+      tasks: { subhan: 0, salawat: 0, istighfar: 0, hawqala: 0, rida: 0, morning: [false, false, false, false], evening: [false, false, false, false] },
+      awarded: { subhan: false, salawat: false, istighfar: false, hawqala: false, rida: false, morning: false, evening: false, combinedBonus: false },
       hadith: { unlockedIndex: 0, selectedIndex: 0, mastered: [] },
       notifications: [{ id: 1, title: `أهلاً بك يا ${profile.name}!`, body: `رقمك التعريفي #${profile.id}. ابدأ تحديك اليوم وتنافس مع ${profile.gender === 'male' ? 'الأولاد' : 'البنات'} في قسمك.`, time: 'الآن', unread: true }],
       challengeMode: 'combined', singleTaskKey: 'subhan', opponentId: null,
@@ -1758,7 +1790,7 @@
     state.meta.settings = Object.assign({ device: false, morning: true, morningAt: '05:30', evening: true, eveningAt: '16:30', closing: true, closingAt: '21:30' }, state.meta.settings);
     state.nextSequentialId = me.id + 1;
     await loadToday();
-    state.currentUser.dailyDone = Object.values(state.awarded).slice(0, 6).filter(Boolean).length;
+    state.currentUser.dailyDone = Object.values(state.awarded).slice(0, 7).filter(Boolean).length;
     state.meta.lastDay = isoDay(); state.meta.dayStartScore = me.score;
     try { await sb.rpc('touch_presence'); } catch (_) {}
     await Promise.all([refreshLb(), refreshOpp(), refreshHistory(), refreshInvites()]);
@@ -1774,8 +1806,8 @@
   function rollover() {
     const today = isoDay(), m = state.meta;
     if (m.lastDay === today) return;
-    state.tasks = { subhan: 0, salawat: 0, istighfar: 0, hawqala: 0, morning: [false, false, false, false], evening: [false, false, false, false] };
-    state.awarded = { subhan: false, salawat: false, istighfar: false, hawqala: false, morning: false, evening: false, combinedBonus: false };
+    state.tasks = { subhan: 0, salawat: 0, istighfar: 0, hawqala: 0, rida: 0, morning: [false, false, false, false], evening: [false, false, false, false] };
+    state.awarded = { subhan: false, salawat: false, istighfar: false, hawqala: false, rida: false, morning: false, evening: false, combinedBonus: false };
     state.currentUser.dailyDone = 0; m.lastDay = today; m.fired = {}; m.lastOppAhead = false;
     refreshMe(); refreshLb(); refreshOpp(); refreshHistory(); pullNotifs(false);
   }
@@ -1819,7 +1851,7 @@
         state.meta.fired[key] = true;
         if (key === 'morning' && getTaskProgress('morning') >= 1) return;
         if (key === 'evening' && getTaskProgress('evening') >= 1) return;
-        if (key === 'closing' && state.currentUser.dailyDone >= 6) return;
+        if (key === 'closing' && state.currentUser.dailyDone >= 7) return;
         addNotification(title, body);
         deviceNotify(title, body);
       }
@@ -1842,12 +1874,12 @@
   document.getElementById('notif-settings') || 0;
 
   // ---------- summary card ----------
-  const TASK_LABELS = { subhan: 'سبحان الله', salawat: 'الصلاة على النبي ﷺ', istighfar: 'الاستغفار', hawqala: 'لا حول ولا قوة إلا بالله', morning: 'أذكار الصباح', evening: 'أذكار المساء' };
+  const TASK_LABELS = { subhan: 'سبحان الله', salawat: 'الصلاة على النبي ﷺ', istighfar: 'الاستغفار', hawqala: 'لا حول ولا قوة إلا بالله', rida: 'رضيت بالله ربا', morning: 'أذكار الصباح', evening: 'أذكار المساء' };
   function badgesFor(u, m) {
     const wins = m.history.filter(h => h.res === 'win').length;
     return [
       [u.streak >= 3, '🔥 مثابر', '٣ أيام متتالية'], [u.streak >= 7, '🌟 ثابت', '٧ أيام متتالية'],
-      [u.dailyDone >= 6, '✅ يوم كامل', 'أتممت كل أوراد اليوم'], [u.hadiths >= 1, '📖 حافظ', 'أول حديث متقن'],
+      [u.dailyDone >= 7, '✅ يوم كامل', 'أتممت كل أوراد اليوم'], [u.hadiths >= 1, '📖 حافظ', 'أول حديث متقن'],
       [u.hadiths >= 5, '🎓 متقن', 'كل الأحاديث'], [wins >= 1, '🏆 فائز', 'فزت في تحدٍّ'], [wins >= 5, '👑 بطل', '٥ انتصارات']
     ];
   }
@@ -1865,7 +1897,7 @@
       duel = diff > 0 ? `متقدّم بـ ${diff}% على ${opp.name}` : diff < 0 ? `متأخر بـ ${-diff}% عن ${opp.name}` : `تعادل مع ${opp.name} حالياً`;
     }
     document.getElementById('sum-duel').textContent = duel;
-    const next = ['subhan', 'salawat', 'istighfar', 'hawqala', 'morning', 'evening'].find(k => getTaskProgress(k) < 1);
+    const next = ['subhan', 'salawat', 'istighfar', 'hawqala', 'rida', 'morning', 'evening'].find(k => getTaskProgress(k) < 1);
     document.getElementById('sum-next').textContent = next ? `الخطوة التالية المقترحة: ${TASK_LABELS[next]}` : 'أتممت كل أوراد اليوم، بارك الله فيك! 🎉';
     document.getElementById('sum-badges').innerHTML = badgesFor(u, m).map(([on, t, d]) =>
       `<span title="${d}" class="text-[11px] font-bold px-2.5 py-1 rounded-full border ${on ? 'bg-amber-100 border-amber-300 text-amber-900' : 'bg-stone-50 border-stone-200 text-stone-400 grayscale opacity-70'}">${t}</span>`).join('');
@@ -1891,7 +1923,7 @@
       <div class="rounded-2xl border p-4 ${medals[i]} ${u.me ? 'ring-2 ring-emerald-700' : ''}">
         <div class="text-xs font-extrabold mb-1">${names[i]}</div>
         <div class="font-extrabold text-base flex items-center justify-between"><span>${dot(u.on)}${u.name} ${u.me ? '(أنت)' : ''}</span><span class="font-num text-xs opacity-75">#${u.id}</span></div>
-        <div class="mt-2 flex items-center justify-between text-xs font-bold"><span>${u.dailyDone == null ? '' : u.dailyDone + '/6 تحديات'}</span><span class="font-num text-base font-black">${v} ${unit}</span></div>
+        <div class="mt-2 flex items-center justify-between text-xs font-bold"><span>${u.dailyDone == null ? '' : u.dailyDone + '/7 تحديات'}</span><span class="font-num text-base font-black">${v} ${unit}</span></div>
       </div>`).join('');
     document.getElementById('leaderboard-tbody').innerHTML = rows.map(({ u, v }, i) => {
       const me = !!u.me;
@@ -1899,7 +1931,7 @@
         <td class="py-3 px-3 font-num font-bold text-stone-700">${i + 1}</td>
         <td class="py-3 px-3 font-num text-emerald-800 font-semibold">#${u.id}</td>
         <td class="py-3 px-3 text-stone-900">${dot(u.on)}${u.name} ${u.on ? '<span class="text-[10px] text-green-700 font-bold">متصل</span>' : '<span class="text-[10px] text-stone-400">غير متصل</span>'} ${me ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md mr-1">أنت</span>' : ''}</td>
-        <td class="py-3 px-3 font-num">${u.dailyDone == null ? "—" : u.dailyDone + " / 6"}</td><td class="py-3 px-3 font-num">${u.hadiths == null ? "—" : u.hadiths + " / 5"}</td>
+        <td class="py-3 px-3 font-num">${u.dailyDone == null ? "—" : u.dailyDone + " / 7"}</td><td class="py-3 px-3 font-num">${u.hadiths == null ? "—" : u.hadiths + " / 5"}</td>
         <td class="py-3 px-3 font-num">${u.streak} يوم</td><td class="py-3 px-3 font-num font-extrabold text-emerald-800">${v}</td></tr>`;
     }).join('');
   };
@@ -2080,6 +2112,7 @@
       ${sw}
       <div class="flex items-center justify-between gap-2"><div class="font-extrabold text-emerald-900">👨‍👩‍👧 ${esc(famInfo.family_name)} <span class="text-xs font-bold text-stone-500">(${famInfo.member_count} أفراد)</span></div>
         <button id="fam-leave" class="text-xs font-bold text-rose-700 cursor-pointer">مغادرة هذه الأسرة</button></div>
+      <button id="fam-remind" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-emerald-950 text-sm font-extrabold cursor-pointer">🔔 ذكّر أسرتي بالتحدّي</button>
       ${famInfo.is_owner ? `<div class="flex items-center gap-2 text-xs"><span class="font-bold">كود الدعوة:</span><span id="fam-code-show" class="font-num font-black tracking-widest text-base bg-white border border-emerald-300 rounded-lg px-3 py-1">${esc(famInfo.code)}</span><button id="fam-copy" class="font-bold text-emerald-800 cursor-pointer">نسخ</button><button id="fam-rotate" class="font-bold text-stone-600 cursor-pointer">كود جديد</button></div><p class="text-[11px] text-stone-500">أرسل الكود لأهلك فقط. أي شخص معه الكود يستطيع الدخول، فغيّره إذا وصل لشخص غريب.</p>` : '<p class="text-[11px] text-stone-500">كود الدعوة يراه مالك الأسرة فقط.</p>'}
       <div class="space-y-1.5">${mem.map(r => `<div class="flex items-center justify-between bg-white rounded-xl border border-stone-200 px-3 py-2 text-sm"><span class="font-bold">${dot(r.online)}${r.gender === 'female' ? '👧' : '👦'} ${esc(r.nick)} <span class="text-[10px] ${r.online ? 'text-green-700 font-bold' : 'text-stone-400'}">${r.online ? 'متصل الآن' : 'غير متصل'}</span> ${r.is_me ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md">أنت</span>' : ''} ${r.is_owner ? '<span title="مالك الأسرة">👑</span>' : ''}</span>
         <span class="flex gap-3 items-center text-xs font-bold">${r.is_me ? '' : `<button data-fchal="${r.public_id}" class="text-emerald-800 cursor-pointer">⚔️ تحدّ</button>`}${famInfo.is_owner && !r.is_me ? `<button data-frem="${r.public_id}" class="text-rose-700 cursor-pointer">إزالة</button>` : ''}</span></div>`).join('')}</div></div>`;
@@ -2106,6 +2139,7 @@
     const t = e.target.closest('button'); if (!t) return;
     if (t.id === 'fam-copy') { try { await navigator.clipboard.writeText(famInfo.code); triggerToast('تم النسخ', 'أرسل الكود لأهلك.'); } catch (_) { triggerToast('الكود', famInfo.code); } }
     if (t.id === 'fam-rotate' && confirm('سيتوقف الكود القديم عن العمل. متابعة؟')) { await sb.rpc('rotate_family_code'); await famRefreshUI(); triggerToast('كود جديد', 'تم تغيير كود الأسرة.'); }
+    if (t.id === 'fam-remind') { const { data, error } = await sb.rpc('family_remind'); if (error) return triggerToast('تعذّر الإرسال', 'حاول بعد قليل.'); if (data === 'ok') triggerToast('تم إرسال التذكير 🔔', 'وصل التذكير لكل أفراد الأسرة.'); else if (data === 'wait') triggerToast('انتظر قليلاً', 'يمكنك إرسال تذكير واحد كل ٣ ساعات.'); else triggerToast('لا توجد أسرة', ''); return; }
     if (t.dataset.fswitch) { await sb.rpc('set_active_family', { p_id: Number(t.dataset.fswitch) }); await famRefreshUI(); return; }
     if (t.id === 'fam-leave' && confirm('هل تريد مغادرة الأسرة المعروضة؟')) { await sb.rpc('leave_family'); await famRefreshUI(); }
     if (t.dataset.fchal) challenge(Number(t.dataset.fchal));
