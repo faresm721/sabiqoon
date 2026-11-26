@@ -538,8 +538,8 @@
         </div>
 
         <!-- Podium Top 3 -->
-                <div id="lb-scope" class="inline-flex bg-emerald-50 p-1 rounded-xl gap-1 mb-3 ml-2"><button type="button" data-scope="div" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">🌍 قسمي</button><button type="button" data-scope="family" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">👨‍👩‍👧 أسرتي</button><button type="button" data-scope="fams" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">🏆 الأسر</button></div>
-                <div id="family-box" class="hidden mb-4"></div>
+                <div id="lb-scope" class="inline-flex bg-emerald-50 p-1 rounded-xl gap-1 mb-3 ml-2"><button type="button" data-scope="div" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">🌍 قسمي</button><button type="button" data-scope="family" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">👨‍👩‍👧 أسرتي</button><button type="button" data-scope="fams" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">🏆 الأسر</button><button type="button" data-scope="invites" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">🤝 الدعوات</button></div>
+                <div id="invite-box" class="mb-4"></div><div id="family-box" class="hidden mb-4"></div>
                 <div id="lb-periods" class="inline-flex bg-stone-100 p-1 rounded-xl gap-1 mb-4">
           <button data-period="day" type="button" class="lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">اليوم</button>
           <button data-period="week" type="button" class="lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">هذا الأسبوع</button>
@@ -1559,7 +1559,7 @@
   let db = Store.read() || { accounts: {} };
   if (!db.accounts) db.accounts = {};
   let famBoard = { day: [], week: [], all: [] }, pushActive = false, permTried = false, notifMsg = '', notifBusy = false;
-  let famInfo = null, famData = { day: [], week: [], all: [] }, lbScope = 'div';
+  let invBoard = [], myInv = { confirmed: 0, pending: 0 }, famInfo = null, famData = { day: [], week: [], all: [] }, lbScope = 'div';
   let swReg = null, lbPeriod = 'day', lbData = { day: [], week: [], all: [] }, oppSrv = null, me = null, rtChan = null, pushTimer = null, pushBusy = false;
   const PW = pin => 'sbq_' + pin + '_sbq';
 
@@ -1574,6 +1574,7 @@
     if (famInfo) { for (const p of ['day', 'week', 'all']) { const { data } = await sb.rpc('family_leaderboard', { p_period: p }); famData[p] = data || []; } }
     else famData = { day: [], week: [], all: [] };
     if (!famInfo && lbScope === 'family') lbScope = 'family';
+    try { const a = await sb.rpc('invite_leaderboard'); invBoard = a.data || []; const b = await sb.rpc('my_invites'); myInv = (b.data && b.data[0]) || { confirmed: 0, pending: 0 }; } catch (_) { }
   }
   async function refreshLb() {
     for (const p of ['day', 'week', 'all']) { const { data } = await sb.rpc('leaderboard', { p_period: p }); if (data) lbData[p] = data; }
@@ -1985,6 +1986,51 @@
     d.querySelector('#ann-go').onclick = () => { close(); activateNotifs(); };
     d.querySelector('#ann-ok').onclick = close;
   }
+  // ---------- invites ----------
+  let inviteIn = null;
+  try {
+    const q = new URLSearchParams(location.search), rf = parseInt(q.get('ref'), 10), fm = (q.get('fam') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    if (rf > 0 || fm) { inviteIn = { ref: rf > 0 ? rf : null, fam: fm }; localStorage.setItem('sbq_invite', JSON.stringify(inviteIn)); history.replaceState(null, '', location.pathname); }
+    else { const t = localStorage.getItem('sbq_invite'); if (t) inviteIn = JSON.parse(t); }
+  } catch (_) { }
+  if (inviteIn) {
+    const regF = document.getElementById('gate-reg');
+    if (regF && inviteIn.fam) document.getElementById('reg-fam').value = inviteIn.fam;
+    if (regF) { const n = document.createElement('div'); n.className = 'rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-sm font-bold p-3 mb-3'; n.textContent = '🤝 دعاك صديق للانضمام إلى سابقون' + (inviteIn.fam ? ' والدخول إلى أسرته. الكود جاهز في الخانة بالأسفل.' : '. أنشئ حسابك وابدأ.'); regF.prepend(n); }
+    window.addEventListener('load', () => setTimeout(() => { const tb = document.getElementById('gate-tab-reg'); if (tb) tb.click(); }, 50));
+  }
+  const inviteBase = () => location.origin + location.pathname;
+  const inviteText = (url, fam) => 'السلام عليكم 🌙\nأدعوك للانضمام إلى «سابقون»، موقع تحديات الأذكار وحفظ صحيح البخاري' + (fam ? ' وللدخول إلى أسرتنا' : '') + '.\n' + url + '\n«الدال على الخير كفاعله»';
+  function renderInviteBox() {
+    const box = document.getElementById('invite-box'); if (!box || !state._ready) return;
+    const id = state.currentUser.id, pl = inviteBase() + '?ref=' + id, fl = famInfo ? inviteBase() + '?fam=' + famInfo.code + '&ref=' + id : '';
+    const b = 'class="flex-1 min-w-[8rem] px-3 py-2 rounded-xl text-sm font-bold cursor-pointer '; 
+    box.innerHTML = `<div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 space-y-3"><div class="flex items-center justify-between gap-2"><div class="font-extrabold text-amber-900">🤝 ادعُ أصدقاءك إلى سابقون</div><div class="text-xs font-bold text-amber-900 text-left">نقاط دعوتك: <span class="font-num text-base font-black">${myInv.confirmed}</span>${myInv.pending ? ` <span class="text-stone-500">(+${myInv.pending} بانتظار التأكيد)</span>` : ''}</div></div>
+      <p class="text-[11px] text-stone-600 leading-relaxed">«الدال على الخير كفاعله». تُحتسب لك نقطة عن كل شخص جديد يسجّل عبر رابطك ويكمل أذكار يوم كاملة (صباح ومساء). لا تُحتسب الحسابات القديمة ولا الدعوة لنفسك.</p>
+      <div class="flex flex-wrap gap-2"><button data-inv="wa" data-url="${pl}" data-fam="" ${b}bg-emerald-700 text-white">📲 دعوة عبر واتساب</button><button data-inv="copy" data-url="${pl}" data-fam="" ${b}bg-white border border-emerald-600 text-emerald-900">📋 نسخ رابط الدعوة</button></div>
+      ${famInfo ? `<div class="border-t border-amber-200 pt-3 space-y-2"><div class="text-xs font-bold text-amber-900">دعوة للدخول إلى أسرتي (${esc(famInfo.family_name)})</div><div class="flex flex-wrap gap-2"><button data-inv="wa" data-url="${fl}" data-fam="1" ${b}bg-emerald-800 text-white">📲 دعوة للأسرة عبر واتساب</button><button data-inv="copy" data-url="${fl}" data-fam="1" ${b}bg-white border border-emerald-600 text-emerald-900">🔗 نسخ رابط الأسرة</button><button data-inv="code" ${b}bg-white border border-stone-300 text-stone-700">نسخ الكود فقط</button></div></div>` : '<p class="text-[11px] text-stone-500">لدعوة أحد إلى أسرتك أنشئ أسرة أولاً من تبويب «أسرتي».</p>'}</div>`;
+  }
+  document.getElementById('invite-box').addEventListener('click', async e => {
+    const t = e.target.closest('button[data-inv]'); if (!t) return;
+    const url = t.dataset.url, fam = !!t.dataset.fam;
+    if (t.dataset.inv === 'wa') { window.open('https://wa.me/?text=' + encodeURIComponent(inviteText(url, fam)), '_blank'); return; }
+    const txt = t.dataset.inv === 'code' ? famInfo.code : url;
+    try { await navigator.clipboard.writeText(txt); triggerToast('تم النسخ ✅', t.dataset.inv === 'code' ? 'أرسل الكود لأهلك.' : 'أرسل الرابط لمن تحب.'); } catch (_) { triggerToast('انسخ يدوياً', txt); }
+  });
+  const _rl2 = window.renderLeaderboard;
+  window.renderLeaderboard = function () {
+    const per = document.getElementById('lb-periods'); if (per) per.classList.toggle('hidden', lbScope === 'invites');
+    if (lbScope !== 'invites') { _rl2(); renderInviteBox(); return; }
+    if (!state._ready) return;
+    document.getElementById('leaderboard-division-badge').textContent = 'سباق الدعوات · ' + (state.currentUser.gender === 'male' ? 'قسم الأولاد' : 'قسم البنات');
+    document.querySelectorAll('.lb-scope').forEach(x => { x.className = 'lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer ' + (x.dataset.scope === lbScope ? 'bg-emerald-800 text-white' : 'text-emerald-900'); });
+    document.getElementById('family-box').classList.add('hidden');
+    renderInviteBox();
+    const rows = invBoard, medals = ['bg-amber-100 border-amber-300 text-amber-900', 'bg-stone-100 border-stone-300 text-stone-800', 'bg-orange-50 border-orange-200 text-orange-900'], names = ['الأول 🥇', 'الثاني 🥈', 'الثالث 🥉'];
+    const hadith = '<div class="sm:col-span-3 rounded-2xl bg-emerald-900 text-amber-200 text-center font-black text-lg py-3 px-4">«الدال على الخير كفاعله»<div class="text-[11px] font-bold text-emerald-100 mt-1">من دعا غيره إلى الخير فله مثل أجره. هنا يتصدّر من جاء بأكبر عدد من الأعضاء الجدد.</div></div>';
+    document.getElementById('leaderboard-podium').innerHTML = hadith + (rows.length ? rows.slice(0, 3).map((r, i) => `<div class="rounded-2xl border p-4 ${medals[i]} ${r.is_me ? 'ring-2 ring-emerald-700' : ''}"><div class="text-xs font-extrabold mb-1">${names[i]}</div><div class="font-extrabold text-base flex items-center justify-between"><span>${esc(r.nick)} ${r.is_me ? '(أنت)' : ''}</span><span class="font-num text-xs opacity-75">#${r.public_id}</span></div><div class="mt-2 text-left font-num text-base font-black">${r.invites} دعوة 🤝</div></div>`).join('') : '<div class="sm:col-span-3 text-center text-sm text-stone-500 font-bold py-4">لا أحد في القائمة بعد. كن أول من يدعو إلى الخير!</div>');
+    document.getElementById('leaderboard-tbody').innerHTML = rows.map((r, i) => `<tr class="${r.is_me ? 'bg-emerald-50/90 font-bold' : ''}"><td class="py-3 px-3 font-num font-bold">${i + 1}</td><td class="py-3 px-3 font-num text-emerald-800 font-semibold">#${r.public_id}</td><td class="py-3 px-3" colspan="4">${esc(r.nick)} ${r.is_me ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md mr-1">أنت</span>' : ''}</td><td class="py-3 px-3 font-num font-extrabold text-emerald-800">${r.invites}</td></tr>`).join('');
+  };
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function renderFamilyBox() {
     const box = document.getElementById('family-box'); if (!box) return;
@@ -2009,8 +2055,8 @@
         <span class="flex gap-3 items-center text-xs font-bold">${r.is_me ? '' : `<button data-fchal="${r.public_id}" class="text-emerald-800 cursor-pointer">⚔️ تحدّ</button>`}${famInfo.is_owner && !r.is_me ? `<button data-frem="${r.public_id}" class="text-rose-700 cursor-pointer">إزالة</button>` : ''}</span></div>`).join('')}</div></div>`;
   }
   const FAMERR = { bad_code: ['الكود غير صحيح', 'تأكد من الكود وحاول مرة أخرى.'], full: ['الأسرة ممتلئة', 'الحد الأقصى ١٢ فرداً.'], already: ['أنت في أسرة بالفعل', 'غادر أسرتك الحالية أولاً.'], throttled: ['محاولات كثيرة', 'انتظر عشر دقائق ثم حاول.'] };
-  async function joinFam(code) {
-    const { data, error } = await sb.rpc('join_family', { p_code: code.trim().toUpperCase() });
+  async function joinFam(code, ref) {
+    const { data, error } = await sb.rpc('join_family', ref ? { p_code: code.trim().toUpperCase(), p_ref: ref } : { p_code: code.trim().toUpperCase() });
     if (error) { triggerToast('تعذّر الانضمام', 'حاول بعد قليل.'); return false; }
     if (data !== 'ok') { const m = FAMERR[data] || ['تعذّر الانضمام', '']; triggerToast(m[0], m[1]); return false; }
     triggerToast('أهلاً بك في الأسرة 👨‍👩‍👧', 'ابدأ المنافسة مع أهلك.'); return true;
@@ -2107,7 +2153,7 @@
       if (error) throw error;
       if (!data.session) throw new Error('no session');
       await afterAuth();
-      const fc = $('reg-fam').value.trim(); if (fc) { if (await joinFam(fc)) { lbScope = 'family'; await refreshFam(); } }
+      const fc = $('reg-fam').value.trim(), rf = (inviteIn && inviteIn.ref) || null; let joined = false; if (fc) { if (await joinFam(fc, rf)) { joined = true; lbScope = 'family'; await refreshFam(); } } if (rf && !joined) { try { await sb.rpc('claim_invite', { p_ref: rf }); } catch (_) { } } if (rf) { localStorage.removeItem('sbq_invite'); inviteIn = null; }
     } catch (err) { showErr('reg-err', 'تعذّر إنشاء الحساب الآن، حاول بعد قليل. (' + (err.message || '') + ')'); }
     if (btn) btn.disabled = false;
   });
@@ -2176,4 +2222,4 @@
 
   </script>
 </body>
-                                           </html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </html>
