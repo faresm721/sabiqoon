@@ -160,6 +160,7 @@
 
   <!-- Main Content -->
   <main class="max-w-6xl w-full mx-auto px-4 py-6 flex-1 space-y-6">
+    <div id="top-zone" class="space-y-3"><div id="notif-banner"></div><div id="top-family"></div></div>
 
     <!-- TAB 1: DAILY ADHKAR CHALLENGES -->
     <section id="view-challenges" class="space-y-6">
@@ -537,7 +538,7 @@
         </div>
 
         <!-- Podium Top 3 -->
-                <div id="lb-scope" class="inline-flex bg-emerald-50 p-1 rounded-xl gap-1 mb-3 ml-2"><button type="button" data-scope="div" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">🌍 قسمي</button><button type="button" data-scope="family" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">👨‍👩‍👧 أسرتي</button></div>
+                <div id="lb-scope" class="inline-flex bg-emerald-50 p-1 rounded-xl gap-1 mb-3 ml-2"><button type="button" data-scope="div" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">🌍 قسمي</button><button type="button" data-scope="family" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">👨‍👩‍👧 أسرتي</button><button type="button" data-scope="fams" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">🏆 الأسر</button></div>
                 <div id="family-box" class="hidden mb-4"></div>
                 <div id="lb-periods" class="inline-flex bg-stone-100 p-1 rounded-xl gap-1 mb-4">
           <button data-period="day" type="button" class="lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">اليوم</button>
@@ -606,7 +607,7 @@
       <div id="reg-err" class="hidden text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"></div>
       <button type="submit" class="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold py-2.5 rounded-xl cursor-pointer">إنشاء الحساب وبدء التحدي</button>
     </form>
-    <p class="text-[11px] text-stone-400 leading-relaxed text-center">نسخة تجريبية: الحسابات محفوظة على هذا الجهاز فقط. عند ربط قاعدة بيانات حقيقية تصبح الحسابات والمنافسة والإشعارات شغالة بين كل الأجهزة.</p>
+    <p class="text-[11px] text-stone-400 leading-relaxed text-center">حسابك محفوظ على الخادم، فتقدر تدخل من أي جهاز بالرقم التعريفي والرمز السري. احفظهما جيداً.</p>
   </div>
 </div>
 <!-- account menu -->
@@ -1557,6 +1558,7 @@
   };
   let db = Store.read() || { accounts: {} };
   if (!db.accounts) db.accounts = {};
+  let famBoard = { day: [], week: [], all: [] }, pushActive = false, permTried = false;
   let famInfo = null, famData = { day: [], week: [], all: [] }, lbScope = 'div';
   let swReg = null, lbPeriod = 'day', lbData = { day: [], week: [], all: [] }, oppSrv = null, me = null, rtChan = null, pushTimer = null, pushBusy = false;
   const PW = pin => 'sbq_' + pin + '_sbq';
@@ -1567,6 +1569,7 @@
     if (data && state.currentUser) { state.currentUser.score = data.score; state.currentUser.streak = data.streak; }
   }
   async function refreshFam() {
+    for (const p of ['day', 'week', 'all']) { const { data } = await sb.rpc('family_board', { p_period: p }); famBoard[p] = data || []; }
     const { data: fi } = await sb.rpc('family_info'); famInfo = fi && fi[0] ? fi[0] : null;
     if (famInfo) { for (const p of ['day', 'week', 'all']) { const { data } = await sb.rpc('family_leaderboard', { p_period: p }); famData[p] = data || []; } }
     else famData = { day: [], week: [], all: [] };
@@ -1667,7 +1670,7 @@
       const j = sub.toJSON();
       await sb.from('push_subscriptions').delete().eq('endpoint', j.endpoint);
       const { error } = await sb.from('push_subscriptions').insert({ user_id: me.uid, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth });
-      window.__pushOk = !error;
+      window.__pushOk = !error; pushActive = !error; state.meta.settings.device = true;
       return !error;
     } catch (e) { window.__pushErr = String(e); return false; }
   }
@@ -1713,6 +1716,7 @@
     await loadToday();
     state.currentUser.dailyDone = Object.values(state.awarded).slice(0, 5).filter(Boolean).length;
     state.meta.lastDay = isoDay(); state.meta.dayStartScore = me.score;
+    try { await sb.rpc('touch_presence'); } catch (_) {}
     await Promise.all([refreshLb(), refreshOpp(), refreshHistory(), refreshInvites()]);
     await pullNotifs(true);
     state._ready = true;
@@ -1720,7 +1724,8 @@
     state.activeTab = 'challenges';
     startRealtime();
     renderAll();
-    if (state.meta.settings.device || ('Notification' in window && Notification.permission === 'granted')) ensurePush();
+    if (state.meta.settings.device || ('Notification' in window && Notification.permission === 'granted')) await ensurePush();
+    renderNotifBanner(); showAnnouncement();
   }
   function rollover() {
     const today = isoDay(), m = state.meta;
@@ -1833,14 +1838,14 @@
       const on = b.dataset.period === lbPeriod;
       b.className = 'lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer ' + (on ? 'bg-emerald-800 text-white' : 'text-stone-600');
     });
-    const rows = ((lbScope === 'family' ? famData : lbData)[lbPeriod] || []).map(r => ({ u: { id: r.public_id, name: r.nick, dailyDone: r.is_me ? u0.dailyDone : null, hadiths: r.is_me ? u0.hadiths : null, streak: r.streak, me: r.is_me }, v: r.points }));
+    const rows = ((lbScope === 'family' ? famData : lbData)[lbPeriod] || []).map(r => ({ u: { id: r.public_id, name: r.nick, dailyDone: r.is_me ? u0.dailyDone : null, hadiths: r.is_me ? u0.hadiths : null, streak: r.streak, me: r.is_me, on: r.online }, v: r.points }));
     const medals = ['bg-amber-100 border-amber-300 text-amber-900', 'bg-stone-100 border-stone-300 text-stone-800', 'bg-orange-50 border-orange-200 text-orange-900'];
     const names = ['المركز الأول 🥇', 'المركز الثاني 🥈', 'المركز الثالث 🥉'];
     const unit = lbPeriod === 'day' ? 'نقطة اليوم' : lbPeriod === 'week' ? 'نقطة الأسبوع' : 'نقطة';
     document.getElementById('leaderboard-podium').innerHTML = rows.slice(0, 3).map(({ u, v }, i) => `
       <div class="rounded-2xl border p-4 ${medals[i]} ${u.me ? 'ring-2 ring-emerald-700' : ''}">
         <div class="text-xs font-extrabold mb-1">${names[i]}</div>
-        <div class="font-extrabold text-base flex items-center justify-between"><span>${u.name} ${u.me ? '(أنت)' : ''}</span><span class="font-num text-xs opacity-75">#${u.id}</span></div>
+        <div class="font-extrabold text-base flex items-center justify-between"><span>${dot(u.on)}${u.name} ${u.me ? '(أنت)' : ''}</span><span class="font-num text-xs opacity-75">#${u.id}</span></div>
         <div class="mt-2 flex items-center justify-between text-xs font-bold"><span>${u.dailyDone == null ? '' : u.dailyDone + '/5 تحديات'}</span><span class="font-num text-base font-black">${v} ${unit}</span></div>
       </div>`).join('');
     document.getElementById('leaderboard-tbody').innerHTML = rows.map(({ u, v }, i) => {
@@ -1848,13 +1853,105 @@
       return `<tr class="${me ? 'bg-emerald-50/90 font-bold' : 'hover:bg-stone-50'}">
         <td class="py-3 px-3 font-num font-bold text-stone-700">${i + 1}</td>
         <td class="py-3 px-3 font-num text-emerald-800 font-semibold">#${u.id}</td>
-        <td class="py-3 px-3 text-stone-900">${u.name} ${me ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md mr-1">أنت</span>' : ''}</td>
+        <td class="py-3 px-3 text-stone-900">${dot(u.on)}${u.name} ${u.on ? '<span class="text-[10px] text-green-700 font-bold">متصل</span>' : '<span class="text-[10px] text-stone-400">غير متصل</span>'} ${me ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md mr-1">أنت</span>' : ''}</td>
         <td class="py-3 px-3 font-num">${u.dailyDone == null ? "—" : u.dailyDone + " / 5"}</td><td class="py-3 px-3 font-num">${u.hadiths == null ? "—" : u.hadiths + " / 5"}</td>
         <td class="py-3 px-3 font-num">${u.streak} يوم</td><td class="py-3 px-3 font-num font-extrabold text-emerald-800">${v}</td></tr>`;
     }).join('');
   };
 
   // ---------- family ----------
+  const dot = on => `<span class="inline-block w-2.5 h-2.5 rounded-full ml-1.5 align-middle ${on ? 'bg-green-500' : 'bg-stone-300'}"></span>`;
+  const _rl0 = window.renderLeaderboard;
+  window.renderLeaderboard = function () {
+    if (lbScope !== 'fams') return _rl0();
+    if (!state._ready) return;
+    document.getElementById('leaderboard-division-badge').textContent = 'كل الأسر تتنافس';
+    document.querySelectorAll('.lb-scope').forEach(b => { b.className = 'lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer ' + (b.dataset.scope === lbScope ? 'bg-emerald-800 text-white' : 'text-emerald-900'); });
+    document.querySelectorAll('.lb-period').forEach(b => { b.className = 'lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer ' + (b.dataset.period === lbPeriod ? 'bg-emerald-800 text-white' : 'text-stone-600'); });
+    renderFamilyBox();
+    const rows = famBoard[lbPeriod] || [];
+    const medals = ['bg-amber-100 border-amber-300 text-amber-900', 'bg-stone-100 border-stone-300 text-stone-800', 'bg-orange-50 border-orange-200 text-orange-900'];
+    const names = ['الأسرة الأولى 🥇', 'الأسرة الثانية 🥈', 'الأسرة الثالثة 🥉'];
+    document.getElementById('leaderboard-podium').innerHTML = rows.slice(0, 3).map((r, i) => `<div class="rounded-2xl border p-4 ${medals[i]} ${r.is_mine ? 'ring-2 ring-emerald-700' : ''}"><div class="text-xs font-extrabold mb-1">${names[i]}</div><div class="font-extrabold text-base">${esc(r.family_name)} ${r.is_mine ? '(أسرتي)' : ''}</div><div class="mt-2 flex items-center justify-between text-xs font-bold"><span>${r.member_count} أفراد · ${r.online_count} متصل</span><span class="font-num text-base font-black">${r.points}</span></div></div>`).join('') || '<p class="text-sm text-stone-500 col-span-3">لا توجد أسر بعد. كن أول من ينشئ أسرة!</p>';
+    document.getElementById('leaderboard-tbody').innerHTML = rows.map((r, i) => `<tr class="${r.is_mine ? 'bg-emerald-50/90 font-bold' : ''}"><td class="py-3 px-3 font-num font-bold">${i + 1}</td><td class="py-3 px-3" colspan="5">${esc(r.family_name)} ${r.is_mine ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md mr-1">أسرتي</span>' : ''} <span class="text-[11px] text-stone-500">${r.member_count} أفراد · ${dot(r.online_count > 0)}${r.online_count} متصل الآن</span></td><td class="py-3 px-3 font-num font-extrabold text-emerald-800">${r.points}</td></tr>`).join('');
+  };
+  function renderTop() {
+    const box = document.getElementById('top-family'); if (!box || !state._ready) return;
+    const rows = famBoard[lbPeriod] || [], per = lbPeriod === 'day' ? 'اليوم' : lbPeriod === 'week' ? 'هذا الأسبوع' : 'الإجمالي';
+    const top3 = rows.slice(0, 3).map((r, i) => `<div class="flex items-center justify-between text-sm ${r.is_mine ? 'font-black text-amber-300' : 'text-emerald-50'}"><span>${['🥇', '🥈', '🥉'][i]} ${esc(r.family_name)}</span><span class="font-num font-bold">${r.points}</span></div>`).join('');
+    if (famInfo) {
+      const idx = rows.findIndex(r => r.is_mine), mine = rows[idx] || { points: 0, online_count: 0, member_count: famInfo.member_count };
+      box.innerHTML = `<div class="rounded-2xl p-4 sm:p-5 text-white shadow-lg" style="background:linear-gradient(135deg,#064e3b,#047857)">
+        <div class="flex items-center justify-between gap-3"><div><div class="text-xs text-amber-300 font-bold">أسرتي · تحدي الأسر (${per})</div><div class="text-xl sm:text-2xl font-black mt-0.5">👨‍👩‍👧 ${esc(famInfo.family_name)}</div></div>
+          <div class="text-center bg-white/15 rounded-xl px-4 py-2"><div class="text-[11px]">الترتيب</div><div class="font-num text-2xl font-black">${idx >= 0 ? '#' + (idx + 1) : '-'}</div></div></div>
+        <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-bold"><span>⭐ ${mine.points} نقطة</span><span>${dot(mine.online_count > 0)}${mine.online_count} من ${mine.member_count} متصلون الآن</span></div>
+        <div class="mt-3 pt-3 border-t border-white/20 space-y-1">${top3}</div>
+        <div class="mt-3 flex gap-2"><button data-gofam="fams" class="flex-1 bg-amber-400 text-emerald-950 font-extrabold rounded-xl py-2 text-sm cursor-pointer">🏆 ترتيب كل الأسر</button><button data-gofam="family" class="flex-1 bg-white/20 font-bold rounded-xl py-2 text-sm cursor-pointer">أفراد أسرتي</button></div></div>`;
+    } else {
+      box.innerHTML = `<div class="rounded-2xl p-4 sm:p-5 text-white shadow-lg" style="background:linear-gradient(135deg,#064e3b,#047857)"><div class="text-xl font-black">👨‍👩‍👧 تحدي الأسر</div><p class="text-sm mt-1 text-emerald-50 leading-relaxed">كل الأسر تتنافس معاً. أنشئ أسرتك أو انضم لأسرة أهلك بالكود وشارك نقاطك لترفع ترتيبها.</p>${top3 ? `<div class="mt-3 pt-3 border-t border-white/20 space-y-1">${top3}</div>` : ''}<div class="mt-3 flex gap-2"><button data-gofam="family" class="flex-1 bg-amber-400 text-emerald-950 font-extrabold rounded-xl py-2.5 text-sm cursor-pointer">إنشاء أسرة / انضمام بكود</button><button data-gofam="fams" class="flex-1 bg-white/20 font-bold rounded-xl py-2.5 text-sm cursor-pointer">ترتيب الأسر</button></div></div>`;
+    }
+  }
+  document.getElementById('top-family').addEventListener('click', async e => {
+    const t = e.target.closest('[data-gofam]'); if (!t) return;
+    document.querySelector('[data-tab="leaderboard"]').click(); lbScope = t.dataset.gofam; await refreshFam(); renderLeaderboard(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  // ---------- notifications banner ----------
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  function renderNotifBanner() {
+    const box = document.getElementById('notif-banner'); if (!box) return;
+    const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+    if (perm === 'granted' && pushActive) { box.innerHTML = ''; return; }
+    const denied = perm === 'denied', unsup = perm === 'unsupported' || (isIOS && !isStandalone);
+    const step = (n, t) => `<li class="flex gap-2.5 items-start"><span class="flex-none w-6 h-6 rounded-full bg-emerald-800 text-white text-xs font-black flex items-center justify-center">${n}</span><span>${t}</span></li>`;
+    box.innerHTML = `<div class="rounded-2xl border-2 border-amber-400 bg-amber-50 p-4 sm:p-5 shadow">
+      <div class="flex items-center gap-2 font-black text-amber-900 text-base sm:text-lg">🔔 فعّل الإشعارات الآن <span class="text-[11px] bg-rose-600 text-white px-2 py-0.5 rounded-full">مهم</span></div>
+      <p class="text-xs sm:text-sm text-stone-700 mt-1 leading-relaxed">لتصلك التحديات والتذكيرات ونتائج المنافسة حتى والموقع مغلق. يختفي هذا الصندوق عندما تعمل الإشعارات فعلاً.</p>
+      <ol class="mt-3 space-y-2 text-sm text-stone-800 font-semibold">
+        ${step(1, 'اضغط زر «فعّل الإشعارات الآن» بالأسفل.')}
+        ${step(2, 'عندما تظهر رسالة المتصفح اضغط <b>«سماح / Allow»</b>.')}
+        ${step(3, '<b>للآيفون:</b> افتح الموقع في Safari، اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية»، وافتح الموقع من أيقونته ثم فعّل.')}
+        ${step(4, 'إذا كان المتصفح حظرها سابقاً: اضغط أيقونة القفل بجانب عنوان الموقع ← «الأذونات» ← «الإشعارات» ← «سماح»، ثم أعد تحميل الصفحة.')}
+      </ol>
+      ${denied ? '<p class="mt-3 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">الإشعارات محظورة الآن في المتصفح. اتبع الخطوة ٤ ثم اضغط الزر.</p>' : ''}
+      ${unsup && isIOS && !isStandalone ? '<p class="mt-3 text-xs font-bold text-amber-900 bg-amber-100 rounded-lg px-3 py-2">على الآيفون لازم تضيف الموقع للشاشة الرئيسية أولاً (الخطوة ٣).</p>' : ''}
+      <button id="btn-notif-now" class="mt-3 w-full bg-emerald-800 text-white font-extrabold rounded-xl py-3 text-sm sm:text-base cursor-pointer">🔔 فعّل الإشعارات الآن</button></div>`;
+  }
+  async function activateNotifs() {
+    try {
+      if (!('Notification' in window)) return triggerToast('غير مدعومة', 'متصفحك لا يدعم الإشعارات.');
+      let p = Notification.permission;
+      if (p === 'default') p = await Notification.requestPermission();
+      if (p === 'granted') { const ok = await ensurePush(); triggerToast(ok ? 'تم تفعيل الإشعارات ✅' : 'تم السماح لكن تعذّر الربط', ok ? 'ستصلك التنبيهات حتى والموقع مغلق.' : 'جرّب إضافة الموقع للشاشة الرئيسية ثم أعد المحاولة.'); }
+      else if (p === 'denied') triggerToast('الإشعارات محظورة', 'اتبع الخطوة ٤ من الصندوق ثم أعد المحاولة.');
+    } catch (_) {}
+    renderNotifBanner(); renderAll();
+  }
+  document.getElementById('notif-banner').addEventListener('click', e => { if (e.target.closest('#btn-notif-now')) activateNotifs(); });
+  // ask at the first tap of every visit until decided (browsers require a tap)
+  document.addEventListener('pointerdown', () => { if (!permTried && state._ready && 'Notification' in window && Notification.permission === 'default') { permTried = true; Notification.requestPermission().then(() => ensurePush().then(() => { renderNotifBanner(); renderAll(); })).catch(() => {}); } }, { once: false });
+  // keep alive: presence + subscription health
+  async function keepAlive() {
+    if (!state._ready || document.visibilityState === 'hidden') return;
+    try { await sb.rpc('touch_presence'); } catch (_) {}
+    if ('Notification' in window && Notification.permission === 'granted') await ensurePush();
+    renderNotifBanner();
+  }
+  setInterval(keepAlive, 45000);
+  setInterval(() => { if (state._ready && document.visibilityState === 'visible') refreshLb().then(() => { if (state.activeTab === 'leaderboard') renderLeaderboard(); renderTop(); }); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAlive(); });
+  // one-time update announcement
+  function showAnnouncement() {
+    const K = 'sbq_ann_v3'; if (localStorage.getItem(K)) return;
+    const d = document.createElement('div'); d.id = 'ann'; d.className = 'fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4';
+    d.innerHTML = `<div class="bg-white rounded-3xl max-w-md w-full p-5 shadow-2xl max-h-[90vh] overflow-auto"><div class="text-center text-3xl">🎉</div><div class="text-center font-black text-xl text-emerald-900 mt-1">تحديث جديد في سابقون</div>
+      <ul class="mt-3 space-y-2 text-sm font-semibold text-stone-800"><li>🏆 <b>تحدي الأسر:</b> كل الأسر تتنافس، وترى أسرتك في أعلى الموقع.</li><li>🟢 <b>متصل / غير متصل:</b> اعرف من يتنافس معك الآن.</li><li>🔔 <b>الإشعارات:</b> فعّلها الآن لتصلك التحديات والتذكيرات حتى والموقع مغلق.</li></ul>
+      <button id="ann-go" class="mt-4 w-full bg-emerald-800 text-white font-extrabold rounded-xl py-3 cursor-pointer">🔔 فعّل الإشعارات وابدأ</button><button id="ann-ok" class="mt-2 w-full text-stone-500 text-sm font-bold py-2 cursor-pointer">لاحقاً</button></div>`;
+    document.body.appendChild(d);
+    const close = () => { localStorage.setItem(K, '1'); d.remove(); };
+    d.querySelector('#ann-go').onclick = () => { close(); activateNotifs(); };
+    d.querySelector('#ann-ok').onclick = close;
+  }
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function renderFamilyBox() {
     const box = document.getElementById('family-box'); if (!box) return;
@@ -1875,7 +1972,7 @@
       <div class="flex items-center justify-between gap-2"><div class="font-extrabold text-emerald-900">👨‍👩‍👧 ${esc(famInfo.family_name)} <span class="text-xs font-bold text-stone-500">(${famInfo.member_count} أفراد)</span></div>
         <button id="fam-leave" class="text-xs font-bold text-rose-700 cursor-pointer">مغادرة الأسرة</button></div>
       ${famInfo.is_owner ? `<div class="flex items-center gap-2 text-xs"><span class="font-bold">كود الدعوة:</span><span id="fam-code-show" class="font-num font-black tracking-widest text-base bg-white border border-emerald-300 rounded-lg px-3 py-1">${esc(famInfo.code)}</span><button id="fam-copy" class="font-bold text-emerald-800 cursor-pointer">نسخ</button><button id="fam-rotate" class="font-bold text-stone-600 cursor-pointer">كود جديد</button></div><p class="text-[11px] text-stone-500">أرسل الكود لأهلك فقط. أي شخص معه الكود يستطيع الدخول، فغيّره إذا وصل لشخص غريب.</p>` : '<p class="text-[11px] text-stone-500">كود الدعوة يراه مالك الأسرة فقط.</p>'}
-      <div class="space-y-1.5">${mem.map(r => `<div class="flex items-center justify-between bg-white rounded-xl border border-stone-200 px-3 py-2 text-sm"><span class="font-bold">${r.gender === 'female' ? '👧' : '👦'} ${esc(r.nick)} ${r.is_me ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md">أنت</span>' : ''} ${r.is_owner ? '<span title="مالك الأسرة">👑</span>' : ''}</span>
+      <div class="space-y-1.5">${mem.map(r => `<div class="flex items-center justify-between bg-white rounded-xl border border-stone-200 px-3 py-2 text-sm"><span class="font-bold">${dot(r.online)}${r.gender === 'female' ? '👧' : '👦'} ${esc(r.nick)} <span class="text-[10px] ${r.online ? 'text-green-700 font-bold' : 'text-stone-400'}">${r.online ? 'متصل الآن' : 'غير متصل'}</span> ${r.is_me ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md">أنت</span>' : ''} ${r.is_owner ? '<span title="مالك الأسرة">👑</span>' : ''}</span>
         <span class="flex gap-3 items-center text-xs font-bold">${r.is_me ? '' : `<button data-fchal="${r.public_id}" class="text-emerald-800 cursor-pointer">⚔️ تحدّ</button>`}${famInfo.is_owner && !r.is_me ? `<button data-frem="${r.public_id}" class="text-rose-700 cursor-pointer">إزالة</button>` : ''}</span></div>`).join('')}</div></div>`;
   }
   const FAMERR = { bad_code: ['الكود غير صحيح', 'تأكد من الكود وحاول مرة أخرى.'], full: ['الأسرة ممتلئة', 'الحد الأقصى ١٢ فرداً.'], already: ['أنت في أسرة بالفعل', 'غادر أسرتك الحالية أولاً.'], throttled: ['محاولات كثيرة', 'انتظر عشر دقائق ثم حاول.'] };
@@ -1886,7 +1983,7 @@
     triggerToast('أهلاً بك في الأسرة 👨‍👩‍👧', 'ابدأ المنافسة مع أهلك.'); return true;
   }
   async function famRefreshUI() { await refreshFam(); renderLeaderboard(); }
-  document.querySelectorAll('.lb-scope').forEach(b => b.addEventListener('click', async () => { lbScope = b.dataset.scope; if (lbScope === 'family') await refreshFam(); renderLeaderboard(); }));
+  document.querySelectorAll('.lb-scope').forEach(b => b.addEventListener('click', async () => { lbScope = b.dataset.scope; if (lbScope !== 'div') await refreshFam(); renderLeaderboard(); }));
   document.getElementById('family-box').addEventListener('submit', async e => {
     e.preventDefault();
     if (e.target.id === 'fam-create') {
@@ -1914,6 +2011,7 @@
     _renderAll();
     renderSummary();
     renderSettings();
+    renderTop();
     if (window.lucide) lucide.createIcons();
     save();
   };
@@ -2045,4 +2143,4 @@
 
   </script>
 </body>
-                  </html>
+  </html>
