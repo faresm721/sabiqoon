@@ -1558,7 +1558,7 @@
   };
   let db = Store.read() || { accounts: {} };
   if (!db.accounts) db.accounts = {};
-  let famBoard = { day: [], week: [], all: [] }, pushActive = false, permTried = false;
+  let famBoard = { day: [], week: [], all: [] }, pushActive = false, permTried = false, notifMsg = '', notifBusy = false;
   let famInfo = null, famData = { day: [], week: [], all: [] }, lbScope = 'div';
   let swReg = null, lbPeriod = 'day', lbData = { day: [], week: [], all: [] }, oppSrv = null, me = null, rtChan = null, pushTimer = null, pushBusy = false;
   const PW = pin => 'sbq_' + pin + '_sbq';
@@ -1664,7 +1664,7 @@
   async function ensurePush() {
     try {
       if (!('serviceWorker' in navigator) || !('PushManager' in window) || Notification.permission !== 'granted' || !me) return false;
-      const reg = swReg || await navigator.serviceWorker.ready;
+      const reg = swReg || await Promise.race([navigator.serviceWorker.ready, new Promise((_, rj) => setTimeout(() => rj(new Error('sw_timeout')), 8000))]);
       let sub = await reg.pushManager.getSubscription();
       if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID_PUB) });
       const j = sub.toJSON();
@@ -1915,21 +1915,31 @@
       </ol>
       ${denied ? '<p class="mt-3 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">الإشعارات محظورة الآن في المتصفح. اتبع الخطوة ٤ ثم اضغط الزر.</p>' : ''}
       ${unsup && isIOS && !isStandalone ? '<p class="mt-3 text-xs font-bold text-amber-900 bg-amber-100 rounded-lg px-3 py-2">على الآيفون لازم تضيف الموقع للشاشة الرئيسية أولاً (الخطوة ٣).</p>' : ''}
+      ${notifMsg ? `<div class="mt-3 text-sm font-bold text-rose-800 bg-rose-50 border border-rose-300 rounded-xl px-3 py-2.5 leading-relaxed">${notifMsg}</div>` : ''}
       <button id="btn-notif-now" class="mt-3 w-full bg-emerald-800 text-white font-extrabold rounded-xl py-3 text-sm sm:text-base cursor-pointer">🔔 فعّل الإشعارات الآن</button></div>`;
   }
   async function activateNotifs() {
+    if (notifBusy) return; notifBusy = true; notifMsg = 'جارٍ التفعيل...'; renderNotifBanner();
+    const done = (msg, toastT) => { notifMsg = msg || ''; notifBusy = false; renderNotifBanner(); renderAll(); if (toastT) triggerToast(toastT, msg || ''); };
     try {
-      if (!('Notification' in window)) return triggerToast('غير مدعومة', 'متصفحك لا يدعم الإشعارات.');
+      if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return done(isIOS && !isStandalone ? 'على الآيفون لازم تضيف الموقع للشاشة الرئيسية أولاً (الخطوة ٣) ثم تفتحه من الأيقونة.' : 'هذا المتصفح لا يدعم إشعارات الويب. جرّب Chrome على الأندرويد.', 'غير مدعومة');
       let p = Notification.permission;
-      if (p === 'default') p = await Notification.requestPermission();
-      if (p === 'granted') { const ok = await ensurePush(); triggerToast(ok ? 'تم تفعيل الإشعارات ✅' : 'تم السماح لكن تعذّر الربط', ok ? 'ستصلك التنبيهات حتى والموقع مغلق.' : 'جرّب إضافة الموقع للشاشة الرئيسية ثم أعد المحاولة.'); }
-      else if (p === 'denied') triggerToast('الإشعارات محظورة', 'اتبع الخطوة ٤ من الصندوق ثم أعد المحاولة.');
-    } catch (_) {}
-    renderNotifBanner(); renderAll();
+      if (p === 'denied') return done('الإشعارات محظورة لهذا الموقع في المتصفح، ولهذا لا تظهر رسالة السماح. افتح قائمة المتصفح ⋮ ← «الإعدادات» ← «إعدادات الموقع» ← «الإشعارات» وابحث عن هذا الموقع واختر «سماح»، أو اضغط أيقونة القفل بجانب العنوان ← «الأذونات» ← «الإشعارات» ← «سماح». ثم أعد تحميل الصفحة واضغط الزر.', 'الإشعارات محظورة');
+      if (p === 'default') {
+        p = await new Promise(res => { let fin = false; const f = v => { if (!fin) { fin = true; res(v); } }; try { const r = Notification.requestPermission(f); if (r && r.then) r.then(f, () => f('default')); } catch (_) { f('default'); } setTimeout(() => f(Notification.permission), 20000); });
+      }
+      if (p === 'denied') return done('تم رفض الإذن. لتفعيله لاحقاً: اضغط أيقونة القفل بجانب العنوان ← «الأذونات» ← «الإشعارات» ← «سماح»، ثم أعد تحميل الصفحة.', 'تم رفض الإذن');
+      if (p !== 'granted') return done('لم تظهر أو لم تُجب رسالة السماح. اضغط الزر مرة أخرى واختر «سماح». إذا لم تظهر الرسالة افتح إعدادات الموقع ← الإشعارات ← سماح.', 'لم يتم السماح بعد');
+      const ok = await ensurePush();
+      if (ok) { notifMsg = ''; notifBusy = false; renderNotifBanner(); renderAll(); return triggerToast('تم تفعيل الإشعارات ✅', 'ستصلك التنبيهات حتى والموقع مغلق.'); }
+      const why = window.__pushErr || '';
+      const hint = /sw_timeout/.test(why) ? 'خدمة الخلفية لم تعمل بعد. أعد تحميل الصفحة وحاول.' : /permission|denied/i.test(why) ? 'المتصفح منع الاشتراك. تأكد من إعدادات الموقع ← الإشعارات ← سماح.' : /abort|push service|network/i.test(why) ? 'تعذّر الاتصال بخدمة الإشعارات. تأكد من الإنترنت وحاول مرة أخرى بعد قليل.' : 'تم السماح لكن تعذّر ربط الجهاز. أعد تحميل الصفحة وحاول، أو أضف الموقع للشاشة الرئيسية.';
+      return done(hint + (why ? ' (' + why.slice(0, 80) + ')' : ''), 'تعذّر الربط');
+    } catch (e) { return done('حدث خطأ: ' + String(e && e.message || e).slice(0, 80), 'خطأ'); }
   }
   document.getElementById('notif-banner').addEventListener('click', e => { if (e.target.closest('#btn-notif-now')) activateNotifs(); });
   // ask at the first tap of every visit until decided (browsers require a tap)
-  document.addEventListener('pointerdown', () => { if (!permTried && state._ready && 'Notification' in window && Notification.permission === 'default') { permTried = true; Notification.requestPermission().then(() => ensurePush().then(() => { renderNotifBanner(); renderAll(); })).catch(() => {}); } }, { once: false });
+  document.addEventListener('pointerdown', ev => { if (ev.target.closest && ev.target.closest('#notif-banner, #ann')) return; if (!permTried && state._ready && 'Notification' in window && Notification.permission === 'default') { permTried = true; Notification.requestPermission().then(() => ensurePush().then(() => { renderNotifBanner(); renderAll(); })).catch(() => {}); } }, { once: false });
   // keep alive: presence + subscription health
   async function keepAlive() {
     if (!state._ready || document.visibilityState === 'hidden') return;
@@ -2143,4 +2153,4 @@
 
   </script>
 </body>
-  </html>
+    </html>
