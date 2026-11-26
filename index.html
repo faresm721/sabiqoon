@@ -537,6 +537,8 @@
         </div>
 
         <!-- Podium Top 3 -->
+                <div id="lb-scope" class="inline-flex bg-emerald-50 p-1 rounded-xl gap-1 mb-3 ml-2"><button type="button" data-scope="div" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">🌍 قسمي</button><button type="button" data-scope="family" class="lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">👨‍👩‍👧 أسرتي</button></div>
+                <div id="family-box" class="hidden mb-4"></div>
                 <div id="lb-periods" class="inline-flex bg-stone-100 p-1 rounded-xl gap-1 mb-4">
           <button data-period="day" type="button" class="lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">اليوم</button>
           <button data-period="week" type="button" class="lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer">هذا الأسبوع</button>
@@ -597,6 +599,8 @@
       </div>
       <div><label class="block text-xs font-bold text-stone-700 mb-1">رمز سري من ٤ أرقام أو أكثر</label>
         <input id="reg-pin" type="password" inputmode="numeric" pattern="[0-9]{4,12}" required placeholder="••••" class="font-num w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600" /></div>
+      <div><label class="block text-xs font-bold text-stone-700 mb-1">كود الأسرة (اختياري)</label>
+        <input id="reg-fam" maxlength="8" autocomplete="off" placeholder="مثال: K7M2QX" class="font-num w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-emerald-600" /></div>
       <div class="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs">
         <span class="font-semibold text-amber-900">رقمك التعريفي سيكون:</span><span id="reg-next-id" class="font-num font-extrabold text-amber-800 text-sm">#1011</span></div>
       <div id="reg-err" class="hidden text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"></div>
@@ -1553,6 +1557,7 @@
   };
   let db = Store.read() || { accounts: {} };
   if (!db.accounts) db.accounts = {};
+  let famInfo = null, famData = { day: [], week: [], all: [] }, lbScope = 'div';
   let swReg = null, lbPeriod = 'day', lbData = { day: [], week: [], all: [] }, oppSrv = null, me = null, rtChan = null, pushTimer = null, pushBusy = false;
   const PW = pin => 'sbq_' + pin + '_sbq';
 
@@ -1561,8 +1566,15 @@
     const { data } = await sb.from('profiles').select('*').maybeSingle();
     if (data && state.currentUser) { state.currentUser.score = data.score; state.currentUser.streak = data.streak; }
   }
+  async function refreshFam() {
+    const { data: fi } = await sb.rpc('family_info'); famInfo = fi && fi[0] ? fi[0] : null;
+    if (famInfo) { for (const p of ['day', 'week', 'all']) { const { data } = await sb.rpc('family_leaderboard', { p_period: p }); famData[p] = data || []; } }
+    else famData = { day: [], week: [], all: [] };
+    if (!famInfo && lbScope === 'family') lbScope = 'family';
+  }
   async function refreshLb() {
     for (const p of ['day', 'week', 'all']) { const { data } = await sb.rpc('leaderboard', { p_period: p }); if (data) lbData[p] = data; }
+    await refreshFam();
     syncUsers();
   }
   async function refreshOpp() {
@@ -1814,12 +1826,14 @@
     if (!state._ready) return;
     const u0 = state.currentUser, m = state.meta;
     const isMale = u0.gender === 'male';
-    document.getElementById('leaderboard-division-badge').textContent = isMale ? 'قسم الأولاد فقط' : 'قسم البنات فقط';
+    document.getElementById('leaderboard-division-badge').textContent = lbScope === 'family' ? 'أسرتي · أولاد وبنات معاً' : (isMale ? 'قسم الأولاد فقط' : 'قسم البنات فقط');
+    document.querySelectorAll('.lb-scope').forEach(b => { b.className = 'lb-scope px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer ' + (b.dataset.scope === lbScope ? 'bg-emerald-800 text-white' : 'text-emerald-900'); });
+    renderFamilyBox();
     document.querySelectorAll('.lb-period').forEach(b => {
       const on = b.dataset.period === lbPeriod;
       b.className = 'lb-period px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold cursor-pointer ' + (on ? 'bg-emerald-800 text-white' : 'text-stone-600');
     });
-    const rows = (lbData[lbPeriod] || []).map(r => ({ u: { id: r.public_id, name: r.nick, dailyDone: r.is_me ? u0.dailyDone : null, hadiths: r.is_me ? u0.hadiths : null, streak: r.streak, me: r.is_me }, v: r.points }));
+    const rows = ((lbScope === 'family' ? famData : lbData)[lbPeriod] || []).map(r => ({ u: { id: r.public_id, name: r.nick, dailyDone: r.is_me ? u0.dailyDone : null, hadiths: r.is_me ? u0.hadiths : null, streak: r.streak, me: r.is_me }, v: r.points }));
     const medals = ['bg-amber-100 border-amber-300 text-amber-900', 'bg-stone-100 border-stone-300 text-stone-800', 'bg-orange-50 border-orange-200 text-orange-900'];
     const names = ['المركز الأول 🥇', 'المركز الثاني 🥈', 'المركز الثالث 🥉'];
     const unit = lbPeriod === 'day' ? 'نقطة اليوم' : lbPeriod === 'week' ? 'نقطة الأسبوع' : 'نقطة';
@@ -1839,6 +1853,57 @@
         <td class="py-3 px-3 font-num">${u.streak} يوم</td><td class="py-3 px-3 font-num font-extrabold text-emerald-800">${v}</td></tr>`;
     }).join('');
   };
+
+  // ---------- family ----------
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function renderFamilyBox() {
+    const box = document.getElementById('family-box'); if (!box) return;
+    if (lbScope !== 'family') { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    const inp = 'class="flex-1 min-w-0 px-3 py-2 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"';
+    const btn = 'class="px-4 py-2 rounded-xl bg-emerald-800 text-white text-sm font-bold cursor-pointer"';
+    if (!famInfo) {
+      box.innerHTML = `<div class="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-3">
+        <div class="font-extrabold text-emerald-900">👨‍👩‍👧 الأسرة: تنافس مع إخوتك وأقاربك</div>
+        <p class="text-xs text-stone-600 leading-relaxed">الأسرة مساحة خاصة يدخلها من معه الكود فقط، ويمكن فيها المنافسة بين الأولاد والبنات من نفس العائلة. استخدم اسماً مستعاراً ولا تكتب اسمك الحقيقي.</p>
+        <form id="fam-create" class="flex gap-2"><input id="fam-name" maxlength="30" required placeholder="اسم الأسرة (مثال: أسرة النور)" ${inp} /><button ${btn}>إنشاء أسرة</button></form>
+        <form id="fam-join" class="flex gap-2"><input id="fam-code" maxlength="8" required placeholder="عندي كود أسرة" ${inp} style="text-transform:uppercase" /><button ${btn}>انضمام</button></form></div>`;
+      return;
+    }
+    const mem = (famData.all || []);
+    box.innerHTML = `<div class="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-3">
+      <div class="flex items-center justify-between gap-2"><div class="font-extrabold text-emerald-900">👨‍👩‍👧 ${esc(famInfo.family_name)} <span class="text-xs font-bold text-stone-500">(${famInfo.member_count} أفراد)</span></div>
+        <button id="fam-leave" class="text-xs font-bold text-rose-700 cursor-pointer">مغادرة الأسرة</button></div>
+      ${famInfo.is_owner ? `<div class="flex items-center gap-2 text-xs"><span class="font-bold">كود الدعوة:</span><span id="fam-code-show" class="font-num font-black tracking-widest text-base bg-white border border-emerald-300 rounded-lg px-3 py-1">${esc(famInfo.code)}</span><button id="fam-copy" class="font-bold text-emerald-800 cursor-pointer">نسخ</button><button id="fam-rotate" class="font-bold text-stone-600 cursor-pointer">كود جديد</button></div><p class="text-[11px] text-stone-500">أرسل الكود لأهلك فقط. أي شخص معه الكود يستطيع الدخول، فغيّره إذا وصل لشخص غريب.</p>` : '<p class="text-[11px] text-stone-500">كود الدعوة يراه مالك الأسرة فقط.</p>'}
+      <div class="space-y-1.5">${mem.map(r => `<div class="flex items-center justify-between bg-white rounded-xl border border-stone-200 px-3 py-2 text-sm"><span class="font-bold">${r.gender === 'female' ? '👧' : '👦'} ${esc(r.nick)} ${r.is_me ? '<span class="text-[11px] bg-emerald-700 text-white px-1.5 py-0.5 rounded-md">أنت</span>' : ''} ${r.is_owner ? '<span title="مالك الأسرة">👑</span>' : ''}</span>
+        <span class="flex gap-3 items-center text-xs font-bold">${r.is_me ? '' : `<button data-fchal="${r.public_id}" class="text-emerald-800 cursor-pointer">⚔️ تحدّ</button>`}${famInfo.is_owner && !r.is_me ? `<button data-frem="${r.public_id}" class="text-rose-700 cursor-pointer">إزالة</button>` : ''}</span></div>`).join('')}</div></div>`;
+  }
+  const FAMERR = { bad_code: ['الكود غير صحيح', 'تأكد من الكود وحاول مرة أخرى.'], full: ['الأسرة ممتلئة', 'الحد الأقصى ١٢ فرداً.'], already: ['أنت في أسرة بالفعل', 'غادر أسرتك الحالية أولاً.'], throttled: ['محاولات كثيرة', 'انتظر عشر دقائق ثم حاول.'] };
+  async function joinFam(code) {
+    const { data, error } = await sb.rpc('join_family', { p_code: code.trim().toUpperCase() });
+    if (error) { triggerToast('تعذّر الانضمام', 'حاول بعد قليل.'); return false; }
+    if (data !== 'ok') { const m = FAMERR[data] || ['تعذّر الانضمام', '']; triggerToast(m[0], m[1]); return false; }
+    triggerToast('أهلاً بك في الأسرة 👨‍👩‍👧', 'ابدأ المنافسة مع أهلك.'); return true;
+  }
+  async function famRefreshUI() { await refreshFam(); renderLeaderboard(); }
+  document.querySelectorAll('.lb-scope').forEach(b => b.addEventListener('click', async () => { lbScope = b.dataset.scope; if (lbScope === 'family') await refreshFam(); renderLeaderboard(); }));
+  document.getElementById('family-box').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (e.target.id === 'fam-create') {
+      const { error } = await sb.rpc('create_family', { p_name: document.getElementById('fam-name').value.trim() });
+      if (error) return triggerToast('تعذّر إنشاء الأسرة', 'حاول بعد قليل.');
+      triggerToast('تم إنشاء الأسرة ✅', 'انسخ الكود وأرسله لأهلك.'); await famRefreshUI();
+    }
+    if (e.target.id === 'fam-join') { if (await joinFam(document.getElementById('fam-code').value)) await famRefreshUI(); }
+  });
+  document.getElementById('family-box').addEventListener('click', async e => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.id === 'fam-copy') { try { await navigator.clipboard.writeText(famInfo.code); triggerToast('تم النسخ', 'أرسل الكود لأهلك.'); } catch (_) { triggerToast('الكود', famInfo.code); } }
+    if (t.id === 'fam-rotate' && confirm('سيتوقف الكود القديم عن العمل. متابعة؟')) { await sb.rpc('rotate_family_code'); await famRefreshUI(); triggerToast('كود جديد', 'تم تغيير كود الأسرة.'); }
+    if (t.id === 'fam-leave' && confirm('هل تريد مغادرة الأسرة؟')) { await sb.rpc('leave_family'); await famRefreshUI(); }
+    if (t.dataset.fchal) challenge(Number(t.dataset.fchal));
+    if (t.dataset.frem && confirm('إزالة هذا العضو من الأسرة؟')) { await sb.rpc('remove_member', { p_public_id: Number(t.dataset.frem) }); await famRefreshUI(); }
+  });
 
   // ---------- renderAll wrapper ----------
   const _renderAll = renderAll;
@@ -1911,6 +1976,7 @@
       if (error) throw error;
       if (!data.session) throw new Error('no session');
       await afterAuth();
+      const fc = $('reg-fam').value.trim(); if (fc) { if (await joinFam(fc)) { lbScope = 'family'; await refreshFam(); } }
     } catch (err) { showErr('reg-err', 'تعذّر إنشاء الحساب الآن، حاول بعد قليل. (' + (err.message || '') + ')'); }
     if (btn) btn.disabled = false;
   });
@@ -1920,7 +1986,7 @@
     const { error } = await sb.rpc('start_challenge', { p_public_id: id });
     if (error) {
       const m = error.message || '';
-      return triggerToast(/same division/.test(m) ? 'المنافسة داخل نفس القسم فقط' : /not found/.test(m) ? 'لم نجد هذا الرقم' : 'تعذّر بدء التحدي', /same division/.test(m) ? 'أولاد مع أولاد وبنات مع بنات.' : /yourself/.test(m) ? 'لا يمكنك تحدي نفسك.' : 'تأكد من الرقم التعريفي لصديقك.');
+      return triggerToast(/same division/.test(m) ? 'المنافسة داخل نفس القسم فقط (أو داخل الأسرة)' : /not found/.test(m) ? 'لم نجد هذا الرقم' : 'تعذّر بدء التحدي', /same division/.test(m) ? 'أولاد مع أولاد وبنات مع بنات.' : /yourself/.test(m) ? 'لا يمكنك تحدي نفسك.' : 'تأكد من الرقم التعريفي لصديقك.');
     }
     await refreshInvites();
     triggerToast('أُرسل طلب التحدي ⚔️', 'ستبدأ المنافسة عندما يقبل صديقك الطلب.');
@@ -1979,4 +2045,4 @@
 
   </script>
 </body>
-        </html>
+                  </html>
