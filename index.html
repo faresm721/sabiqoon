@@ -164,6 +164,7 @@
     <!-- TAB 1: DAILY ADHKAR CHALLENGES -->
     <section id="view-challenges" class="space-y-6">
       <!-- v2: today summary -->
+      <div id="invites-box" class="space-y-2"></div>
       <div id="summary-card" class="bg-white rounded-2xl border border-stone-200 shadow-sm p-4 sm:p-5">
         <div class="flex flex-col md:flex-row gap-5 md:items-center">
           <div class="flex items-center gap-4">
@@ -1598,7 +1599,7 @@
   }
   function startRealtime() {
     if (rtChan) sb.removeChannel(rtChan);
-    rtChan = sb.channel('n-' + me.uid).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_id=eq.' + me.uid }, async () => { await pullNotifs(false); await refreshOpp(); renderAll(); }).subscribe();
+    rtChan = sb.channel('n-' + me.uid).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_id=eq.' + me.uid }, async () => { await pullNotifs(false); await refreshOpp(); await refreshInvites(); renderAll(); }).subscribe();
   }
   function schedulePush(ms) { clearTimeout(pushTimer); pushTimer = setTimeout(pushProgress, ms || 1200); }
   async function pushProgress() {
@@ -1627,6 +1628,22 @@
     return true;
   }
   function tickOpponent() {}
+  async function refreshInvites() {
+    const box = document.getElementById('invites-box'); if (!box || !me) return;
+    const { data } = await sb.rpc('pending_challenges');
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    box.innerHTML = (data || []).map(r => r.direction === 'in'
+      ? `<div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap"><div class="font-extrabold text-emerald-950 text-sm">⚔️ ${esc(r.nick)} <span class="font-num text-xs opacity-70">#${r.public_id}</span> يتحداك!<div class="text-xs font-semibold text-stone-600 mt-0.5">تبدأ المنافسة فقط إذا قبلت.</div></div><div class="flex gap-2"><button data-inv="${r.id}" data-acc="1" type="button" class="bg-emerald-800 text-white font-bold text-sm px-4 py-2 rounded-xl cursor-pointer">قبول</button><button data-inv="${r.id}" data-acc="0" type="button" class="bg-stone-200 text-stone-800 font-bold text-sm px-4 py-2 rounded-xl cursor-pointer">رفض</button></div></div>`
+      : `<div class="bg-stone-50 border border-stone-200 rounded-2xl px-4 py-2.5 text-xs font-bold text-stone-600">⏳ بانتظار رد ${esc(r.nick)} <span class="font-num">#${r.public_id}</span> على طلب التحدي.</div>`).join('');
+  }
+  document.addEventListener('click', async e => {
+    const b = e.target.closest && e.target.closest('[data-inv]'); if (!b) return;
+    b.disabled = true;
+    const { error } = await sb.rpc('respond_challenge', { p_id: Number(b.dataset.inv), p_accept: b.dataset.acc === '1' });
+    if (error) triggerToast('تعذّر تنفيذ الطلب', 'ربما انتهى الطلب أو أُلغي.');
+    else triggerToast(b.dataset.acc === '1' ? 'بدأ التحدي! ⚔️' : 'تم رفض الطلب', b.dataset.acc === '1' ? 'بالتوفيق، النتيجة تُحسم منتصف الليل.' : '');
+    await refreshOpp(); await refreshInvites(); renderAll();
+  });
   const VAPID_PUB = 'BBpClASbgm8IEbcy5OEskl4st0t89m-5uthOJ-JfPD0PZG78wH1HVzpkCEsMDVfQoEvdQ8srH7TSyoPcVxiyQSc';
   const b64u = str => { const pad = '='.repeat((4 - str.length % 4) % 4); const raw = atob((str + pad).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...raw].map(c => c.charCodeAt(0))); };
   async function ensurePush() {
@@ -1684,14 +1701,14 @@
     await loadToday();
     state.currentUser.dailyDone = Object.values(state.awarded).slice(0, 5).filter(Boolean).length;
     state.meta.lastDay = isoDay(); state.meta.dayStartScore = me.score;
-    await Promise.all([refreshLb(), refreshOpp(), refreshHistory()]);
+    await Promise.all([refreshLb(), refreshOpp(), refreshHistory(), refreshInvites()]);
     await pullNotifs(true);
     state._ready = true;
     document.getElementById('gate').classList.add('hidden');
     state.activeTab = 'challenges';
     startRealtime();
     renderAll();
-    if (state.meta.settings.device) ensurePush();
+    if (state.meta.settings.device || ('Notification' in window && Notification.permission === 'granted')) ensurePush();
   }
   function rollover() {
     const today = isoDay(), m = state.meta;
@@ -1905,8 +1922,8 @@
       const m = error.message || '';
       return triggerToast(/same division/.test(m) ? 'المنافسة داخل نفس القسم فقط' : /not found/.test(m) ? 'لم نجد هذا الرقم' : 'تعذّر بدء التحدي', /same division/.test(m) ? 'أولاد مع أولاد وبنات مع بنات.' : /yourself/.test(m) ? 'لا يمكنك تحدي نفسك.' : 'تأكد من الرقم التعريفي لصديقك.');
     }
-    await refreshOpp();
-    addNotification('بدأ التحدي! ⚔️', `أنت الآن في تحدٍّ مع ${oppSrv ? oppSrv.name : ''} (#${id}). النتيجة تُحسم منتصف الليل.`);
+    await refreshInvites();
+    triggerToast('أُرسل طلب التحدي ⚔️', 'ستبدأ المنافسة عندما يقبل صديقك الطلب.');
     renderAll();
   }
   $('friend-form').addEventListener('submit', e => { e.preventDefault(); const v = parseInt($('friend-id').value.trim(), 10); $('friend-id').value = ''; if (v) challenge(v); });
@@ -1942,6 +1959,7 @@
 
   // service worker (works when served over https, e.g. GitHub Pages)
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.addEventListener('message', ev => { if (ev.data && ev.data.type === 'resubscribe') ensurePush(); });
     navigator.serviceWorker.register('sw.js').then(r => { swReg = r; }).catch(() => {});
   }
 
@@ -1954,11 +1972,11 @@
   });
   setInterval(runReminders, 30000);
   setTimeout(runReminders, 1500);
-  setInterval(() => { if (state._ready) { updateCountdownBar(); refreshOpp().then(renderAll); } }, 30000);
+  setInterval(() => { if (state._ready) { updateCountdownBar(); refreshOpp().then(refreshInvites).then(renderAll); } }, 30000);
   window.addEventListener('beforeunload', save);
   window.__sabiqoon = { state, sb };
 })();
 
   </script>
 </body>
- </html>
+        </html>
