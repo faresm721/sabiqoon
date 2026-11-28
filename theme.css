@@ -1,0 +1,324 @@
+/* ============================================================
+   سابقون — واجهة داكنة (تجربة تصميم)
+   طبقة تنسيق فوق tw.css: نفس المكوّنات والوظائف، مظهر جديد
+   ============================================================ */
+:root{
+  --bg:#0a1424;
+  --bg-deep:#08111e;
+  --surface:#112134;
+  --surface-2:#16293f;
+  --surface-3:#17304b;
+  --line:rgba(255,255,255,.075);
+  --line-2:rgba(255,255,255,.14);
+  --gold:#d9b46a;
+  --gold-2:#f0d9a4;
+  --gold-3:#b8933f;
+  --ink:#e9eefb;
+  --ink-2:#aab9d0;
+  --ink-3:#7f90a8;
+  --teal:#2f9e9e;
+  --danger:#e2757d;
+}
+html{background:var(--bg-deep)}
+body{
+  background:
+    radial-gradient(900px 480px at 92% -10%, rgba(217,180,106,.13), transparent 62%),
+    radial-gradient(820px 460px at -6% 2%, rgba(47,158,158,.11), transparent 60%),
+    var(--bg) !important;
+  color:var(--ink) !important;
+  font-family:'Cairo','Inter',system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(217,180,106,.28);color:#fff}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#1d3450;border-radius:10px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- الرأس ---------- */
+header.islamic-pattern{
+  background-color:transparent !important;
+  background-image:
+    radial-gradient(620px 220px at 50% -70%, rgba(217,180,106,.20), transparent 72%),
+    radial-gradient(rgba(217,180,106,.10) 1px, transparent 1px),
+    linear-gradient(180deg,#0d1f34,#0a1626) !important;
+  background-size:auto,26px 26px,auto !important;
+  border-bottom:1px solid var(--line);
+  box-shadow:0 14px 34px rgba(0,0,0,.38) !important;
+}
+header h1{letter-spacing:0}
+header .text-emerald-100\/80{color:rgba(233,238,251,.62) !important}
+
+/* ---------- شريط التبويبات ---------- */
+nav{
+  background:rgba(10,20,36,.92) !important;
+  border-color:var(--line) !important;
+  border-bottom:1px solid var(--line) !important;
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+}
+.tab-btn{color:var(--ink-2) !important}
+.tab-btn:hover{background:rgba(255,255,255,.05) !important;color:var(--ink) !important}
+.tab-btn.bg-emerald-800{
+  background:linear-gradient(180deg,#f0d9a4,#d0a955) !important;
+  color:#0a1424 !important;
+  box-shadow:0 8px 20px rgba(217,180,106,.25) !important;
+}
+.tab-btn svg,.tab-btn i{opacity:.9}
+
+/* ---------- البطاقات والأسطح ---------- */
+.bg-white{background-color:var(--surface) !important}
+.bg-white\/10{background-color:rgba(255,255,255,.055) !important}
+.bg-white\/15{background-color:rgba(255,255,255,.075) !important}
+.bg-white\/20{background-color:rgba(255,255,255,.10) !important}
+.bg-stone-50,.bg-stone-50\/60{background-color:#0c1a2b !important}
+.bg-stone-100{background-color:#122438 !important}
+.bg-stone-200,.bg-stone-300{background-color:rgba(255,255,255,.12) !important}
+.bg-\[\#faf8f4\]{background-color:var(--bg) !important}
+.bg-emerald-50,.bg-emerald-50\/40,.bg-emerald-50\/60,.bg-emerald-50\/70,.bg-emerald-50\/90{
+  background-color:rgba(47,158,158,.10) !important;
+}
+.bg-emerald-100,.bg-emerald-200{background-color:rgba(47,158,158,.16) !important}
+.bg-emerald-600,.bg-emerald-700,.bg-emerald-800{
+  background:linear-gradient(180deg,#f0d9a4,#d0a955) !important;
+  color:#0a1424 !important;
+  border-color:rgba(217,180,106,.55) !important;
+  box-shadow:0 8px 20px rgba(217,180,106,.18);
+}
+.bg-emerald-900,.bg-emerald-950,.bg-emerald-950\/45,.bg-emerald-950\/60{
+  background-color:#0b1c2f !important;
+}
+.bg-amber-50,.bg-amber-50\/50,.bg-amber-50\/70{background-color:rgba(217,180,106,.10) !important}
+.bg-amber-100{background-color:rgba(217,180,106,.18) !important}
+.bg-amber-400{background-color:#f0d9a4 !important;color:#0a1424 !important}
+.bg-amber-500{background-color:#d9b46a !important;color:#0a1424 !important}
+.bg-amber-600{background-color:#b8933f !important;color:#0a1424 !important}
+.bg-amber-500\/20,.bg-amber-500\/25{background-color:rgba(217,180,106,.18) !important}
+.bg-rose-50{background-color:rgba(226,117,125,.10) !important}
+.bg-rose-600{background-color:#c9535c !important}
+.bg-orange-50{background-color:rgba(224,160,106,.12) !important}
+.bg-sky-50{background-color:rgba(127,192,232,.10) !important}
+.bg-sky-600,.bg-sky-700{background-color:#2b6f9e !important}
+.bg-teal-50{background-color:rgba(47,158,158,.12) !important}
+.bg-teal-600,.bg-teal-700{background:linear-gradient(180deg,#38b0b0,#228b8b) !important;color:#04201f !important}
+.bg-violet-50{background-color:rgba(150,140,230,.10) !important}
+.bg-violet-600,.bg-violet-700{background:linear-gradient(180deg,#6d78c4,#4f5aa6) !important;color:#fff !important}
+.bg-indigo-100{background-color:rgba(150,140,230,.14) !important}
+.bg-green-500{background-color:#4bbf7a !important}
+
+/* ---------- النصوص ---------- */
+.text-emerald-950,.text-emerald-900,.text-emerald-800,.text-emerald-700,
+.text-stone-900,.text-stone-800,.text-stone-700{color:var(--ink) !important}
+.text-stone-600{color:#c6d2e3 !important}
+.text-stone-500{color:var(--ink-2) !important}
+.text-stone-400{color:var(--ink-3) !important}
+.text-emerald-200,.text-emerald-100\/80,.text-emerald-50\/95,.text-emerald-50{color:rgba(233,238,251,.75) !important}
+.text-amber-900,.text-amber-800,.text-amber-700,.text-amber-600{color:var(--gold) !important}
+.text-amber-300,.text-amber-200{color:var(--gold-2) !important}
+.text-amber-500{color:#e2be78 !important}
+.text-rose-700,.text-rose-800,.text-rose-900{color:#f0a1a8 !important}
+.text-sky-700,.text-sky-800{color:#8fc9ec !important}
+.text-teal-700,.text-teal-800{color:#63cccc !important}
+.text-violet-700,.text-violet-800{color:#b6a9f2 !important}
+.text-green-700{color:#74d29c !important}
+.text-orange-700,.text-orange-900{color:#e6a970 !important}
+.text-amber-950{color:#0a1424 !important}
+
+/* ---------- الحدود ---------- */
+.border-stone-100,.border-stone-200,.border-stone-300,.border-emerald-100,
+.border-sky-200,.border-teal-200,.border-violet-200,.border-orange-200{
+  border-color:var(--line) !important;
+}
+.border-emerald-200,.border-emerald-300,.border-emerald-600,.border-emerald-700,.border-emerald-800{
+  border-color:rgba(217,180,106,.30) !important;
+}
+.border-amber-200,.border-amber-300,.border-amber-400,.border-amber-200\/70,
+.border-amber-400\/30,.border-amber-400\/40{border-color:rgba(217,180,106,.38) !important}
+.border-rose-200,.border-rose-300{border-color:rgba(226,117,125,.32) !important}
+.border-white\/10,.border-white\/15,.border-white\/20{border-color:var(--line-2) !important}
+.divide-stone-100>:not([hidden])~:not([hidden]){border-color:var(--line) !important}
+
+/* ---------- الظلال ---------- */
+.shadow-sm{box-shadow:0 2px 10px rgba(0,0,0,.28) !important}
+.shadow,.shadow-md{box-shadow:0 10px 26px rgba(0,0,0,.32) !important}
+.shadow-lg{box-shadow:0 16px 34px rgba(0,0,0,.38) !important}
+.shadow-xl,.shadow-2xl{box-shadow:0 26px 60px rgba(0,0,0,.5) !important}
+
+/* ---------- الحالات التفاعلية ---------- */
+.hover\:bg-stone-100:hover,.hover\:bg-stone-50:hover,.hover\:bg-stone-200:hover{background-color:rgba(255,255,255,.06) !important}
+.hover\:bg-emerald-50:hover{background-color:rgba(47,158,158,.12) !important}
+.hover\:bg-emerald-800:hover,.hover\:bg-emerald-900:hover{background:linear-gradient(180deg,#f7e3b4,#dcb768) !important}
+.hover\:bg-amber-400:hover,.hover\:bg-amber-50:hover{background-color:#f7e3b4 !important}
+.hover\:bg-amber-600:hover,.hover\:bg-amber-700:hover{background-color:#c9a24f !important}
+.hover\:bg-rose-50:hover{background-color:rgba(226,117,125,.14) !important}
+.hover\:bg-white\/15:hover,.hover\:bg-white\/20:hover,.hover\:bg-white\/25:hover{background-color:rgba(255,255,255,.14) !important}
+.hover\:bg-sky-800:hover{background-color:#25608a !important}
+.hover\:bg-teal-800:hover{background:linear-gradient(180deg,#45c0c0,#2b9a9a) !important}
+.hover\:bg-violet-800:hover{background:linear-gradient(180deg,#7b86d4,#5c68b8) !important}
+.hover\:text-stone-700:hover,.hover\:text-stone-800:hover,.hover\:text-stone-900:hover{color:#fff !important}
+.hover\:border-emerald-300:hover,.hover\:border-emerald-500:hover{border-color:rgba(217,180,106,.55) !important}
+.ring-emerald-700{--tw-ring-color:rgba(217,180,106,.75) !important}
+.ring-emerald-700\/20{--tw-ring-color:rgba(217,180,106,.22) !important}
+.accent-emerald-700{accent-color:var(--gold) !important}
+.peer:checked~.peer-checked\:bg-emerald-50{background-color:rgba(217,180,106,.10) !important}
+.peer:checked~.peer-checked\:border-emerald-700{border-color:rgba(217,180,106,.55) !important}
+
+/* ---------- الحقول ---------- */
+input,select,textarea{
+  background-color:#0c1a2b !important;
+  border-color:var(--line-2) !important;
+  color:var(--ink) !important;
+  border-radius:12px !important;
+}
+input::placeholder,textarea::placeholder{color:var(--ink-3) !important}
+input:focus,select:focus,textarea:focus{
+  outline:none !important;
+  border-color:rgba(217,180,106,.6) !important;
+  box-shadow:0 0 0 3px rgba(217,180,106,.16) !important;
+}
+
+/* ---------- التدرجات ---------- */
+.from-amber-400{--tw-gradient-from:#f0d9a4 var(--tw-gradient-from-position) !important}
+.to-amber-300{--tw-gradient-to:#f7e6bb var(--tw-gradient-to-position) !important}
+.from-emerald-300{--tw-gradient-from:#63cccc var(--tw-gradient-from-position) !important}
+.to-teal-300{--tw-gradient-to:#8fe0e0 var(--tw-gradient-to-position) !important}
+.from-emerald-900{--tw-gradient-from:#0b1c2f var(--tw-gradient-from-position) !important}
+.via-emerald-800{--tw-gradient-stops:var(--tw-gradient-from),#12283f var(--tw-gradient-via-position),var(--tw-gradient-to) !important}
+.to-teal-900{--tw-gradient-to:#0a1b2a var(--tw-gradient-to-position) !important}
+[style*="linear-gradient(135deg,#064e3b"]{
+  background:linear-gradient(135deg,#12283f,#0d1f34) !important;
+}
+
+/* ---------- ملخص اليوم / الحلقة ---------- */
+#summary-card svg circle[stroke="#e7e5e4"]{stroke:rgba(255,255,255,.09) !important}
+#sum-ring{stroke:var(--gold) !important}
+#sum-pct{color:var(--gold-2) !important}
+
+/* ---------- إخفاء بطاقة الأسر القديمة (تستبدلها البطاقة البارزة) ---------- */
+#top-family{display:none !important}
+
+/* ---------- قسم الأسرة البارز ---------- */
+#fam-hero{
+  position:relative;
+  overflow:hidden;
+  border-radius:20px;
+  padding:18px 18px 16px;
+  background:
+    radial-gradient(560px 220px at 88% -40%, rgba(217,180,106,.26), transparent 68%),
+    radial-gradient(420px 200px at -10% 120%, rgba(47,158,158,.20), transparent 70%),
+    linear-gradient(160deg,#132c46,#0e2136 58%,#0c1a2b);
+  border:1px solid rgba(217,180,106,.30);
+  box-shadow:0 20px 44px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+}
+#fam-hero::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:radial-gradient(rgba(217,180,106,.10) 1px, transparent 1px);
+  background-size:22px 22px;
+  opacity:.5;
+  pointer-events:none;
+  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 75%);
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 75%);
+}
+#fam-hero .fh-in{position:relative;z-index:1}
+#fam-hero .fh-top{display:flex;align-items:center;gap:12px}
+#fam-hero .fh-icon{
+  width:46px;height:46px;border-radius:15px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,rgba(217,180,106,.32),rgba(217,180,106,.10));
+  border:1px solid rgba(217,180,106,.38);
+  color:var(--gold-2);
+  box-shadow:0 8px 18px rgba(0,0,0,.3);
+}
+#fam-hero .fh-icon svg{width:22px;height:22px}
+#fam-hero h2{font-size:18px;font-weight:900;color:#fff;line-height:1.35}
+#fam-hero .fh-sub{font-size:12.5px;color:#b7c6db;margin-top:3px;line-height:1.65}
+#fam-hero .fh-badge{
+  font-size:10.5px;font-weight:800;color:#0a1424;
+  background:linear-gradient(180deg,#f0d9a4,#d3ac58);
+  border-radius:999px;padding:2px 9px;margin-inline-start:6px;vertical-align:middle;
+}
+#fam-hero .fh-stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#fam-hero .fh-stat{
+  background:rgba(255,255,255,.055);border:1px solid var(--line-2);
+  border-radius:12px;padding:7px 11px;font-size:11.5px;font-weight:700;color:#c9d6e8;
+  display:flex;align-items:center;gap:6px;
+}
+#fam-hero .fh-stat b{color:var(--gold-2);font-weight:900}
+#fam-hero .fh-actions{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap;justify-content:flex-start}
+#fam-hero .fh-primary{
+  flex:1 1 200px;max-width:360px;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:linear-gradient(180deg,#f7e3b4,#d3ac58);
+  color:#0a1424;font-weight:900;font-size:14.5px;
+  border-radius:14px;padding:13px 16px;cursor:pointer;
+  box-shadow:0 12px 26px rgba(217,180,106,.28);
+  transition:transform .12s ease, box-shadow .2s ease, filter .2s ease;
+}
+#fam-hero .fh-primary:hover{filter:brightness(1.06);box-shadow:0 16px 30px rgba(217,180,106,.36)}
+#fam-hero .fh-primary:active{transform:scale(.985)}
+#fam-hero .fh-primary svg{width:18px;height:18px}
+#fam-hero .fh-ghost{
+  flex:0 1 auto;display:flex;align-items:center;justify-content:center;gap:7px;
+  background:rgba(255,255,255,.06);border:1px solid var(--line-2);
+  color:var(--ink);font-weight:800;font-size:13px;border-radius:14px;padding:13px 15px;cursor:pointer;
+}
+#fam-hero .fh-ghost:hover{background:rgba(255,255,255,.12)}
+#fam-hero .fh-ghost svg{width:16px;height:16px;opacity:.85}
+
+/* ---------- شريط سفلي على الموبايل ---------- */
+@media (max-width:767px){
+  nav{
+    position:fixed !important;
+    inset:auto 0 0 0 !important;
+    top:auto !important;
+    z-index:40;
+    border-top:1px solid var(--line) !important;
+    border-bottom:0 !important;
+    padding-bottom:env(safe-area-inset-bottom);
+    box-shadow:0 -12px 30px rgba(0,0,0,.45);
+  }
+  nav>div{padding:0 !important}
+  nav>div>div{width:100%;justify-content:space-around !important;gap:6px !important;padding:8px 8px 10px !important;overflow:visible !important}
+  nav .tab-btn{
+    flex:1 1 0 !important;
+    flex-direction:column !important;
+    gap:4px !important;
+    padding:7px 4px !important;
+    font-size:11px !important;
+    border-radius:14px !important;
+    justify-content:center !important;
+    min-width:0 !important;
+  }
+  nav .tab-btn svg{width:19px !important;height:19px !important}
+  main{padding-bottom:96px !important}
+  #fam-hero{padding:16px}
+  #fam-hero h2{font-size:16.5px}
+  header .sticky-offset,header{position:relative}
+}
+
+/* ---------- شاشة الدخول ---------- */
+#gate.islamic-pattern{
+  background-color:#08111e !important;
+  background-image:
+    radial-gradient(720px 340px at 50% -12%, rgba(217,180,106,.16), transparent 72%),
+    radial-gradient(520px 260px at 8% 108%, rgba(47,158,158,.14), transparent 70%),
+    radial-gradient(rgba(217,180,106,.10) 1px, transparent 1px) !important;
+  background-size:auto,auto,26px 26px !important;
+}
+#gate>div{border:1px solid rgba(255,255,255,.08)}
+
+
+/* ---------- لمسات أخيرة ---------- */
+#fam-hero .fh-mark{
+  position:absolute; inset-inline-start:-18px; bottom:-26px;
+  width:150px;height:150px;color:rgba(217,180,106,.07);pointer-events:none;z-index:0;
+}
+#fam-hero .fh-mark svg{width:100%;height:100%;stroke-width:1}
+#btn-guide{
+  background:rgba(255,255,255,.045) !important;
+  border:1px solid var(--line-2) !important;
+  color:var(--ink) !important;
+  box-shadow:none !important;
+}
+#btn-guide:hover{background:rgba(255,255,255,.08) !important}
+@media (max-width:767px){ #fam-hero .fh-primary{max-width:none} }
